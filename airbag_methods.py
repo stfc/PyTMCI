@@ -1,11 +1,13 @@
-import numpy as np                   # Linear algebra and mathematical functions
-import scipy.constants as cn         # Physical constants
+import numpy as np                  # Linear algebra and mathematical functions
+import scipy.constants as cn        # Physical constants
 import scipy.special as sp
-from multiprocessing import Pool
+
 
 def generateBaseMatrix(max_l: int, zhat,
-                       sampled_frequencies: np.ndarray, sampled_impedance: np.ndarray,
-                       f0:float, num_bunches:float, beta:float, w_b:float, w_xi:float) -> np.ndarray:
+                       sampled_frequencies: np.ndarray,
+                       sampled_impedance: np.ndarray,
+                       f0: float, num_bunches: float,
+                       beta: float, w_b: float, w_xi: float) -> np.ndarray:
     '''
     Provided l*ws is neglected in the frequency sampling, the bessel functions
     and impedance are sampled at the same frequency for every matrix element.
@@ -16,33 +18,34 @@ def generateBaseMatrix(max_l: int, zhat,
     In a subsequent version of the code the impedance and bessel functions were
     evaluated once, before the matrix was populated, and then the results were
     just multiplied and summed for the matrix elements.
-    
+
     It was noted however that this still meant evaluating the impedance and
     bessel functions once for every value of protons_per_bunch, which happed
     something like 50 times. To avoid this the impedance and bessel functions
     are evaluated once, then the results passed to the matrix builder function.
     This function is for evaluating the impedance and bessel functions.
     '''
-    fp = sampled_frequencies  # Note all frequencies same, so skipping l*omega_s
-    wp = 2*np.pi*fp
-    w = wp-w_xi
-        
-    # Make a list of all the values of l that will be calculated, this gets repeated a few times
-    l = np.arange(-int(max_l), int(max_l)+1)
-    
+    fp = sampled_frequencies  # Skipping l*omega_s
+    wp = 2 * np.pi * fp
+    w = wp - w_xi
+
+    # Make a list of all values of l to be used, this gets repeated
+    l = np.arange(-int(max_l), int(max_l) + 1)
+
     # Preliminarily work out all of the required bessel functions. This avoids
     # calling them inside the nested loop since we only need to calculate J for
     # each value of l.
     #
     # By making this a dictionary rather than an array we can still use i and j
     # (e.g. if we set matrixSize=6 i=(-3, -2, -1, 0, 1, 2, 3) etc)
-    # to index, whereas if we used an array we'd have to work out what that l=1 
-    # was index 4.   
-    jdict = generateBesselJDict(max_l, w*zhat/beta/cn.c)
-    
+    # to index, whereas if we used an array we'd have to work out what that l=1
+    # was index 4.
+    jdict = generateBesselJDict(max_l, w * zhat / beta / cn.c)
+
     # Allocate memory for the matrix
-    matrix = np.zeros(shape=(2*max_l+1, 2*max_l+1), dtype=np.complex128)
-    
+    matrix = np.zeros(shape=(2 * max_l + 1, 2 * max_l + 1),
+                      dtype=np.complex128)
+
     # populate the matrix
     # Note that since this is the sum j_i * j_j, that it doesn't matter the
     # order of the orders(there is no difference between j_i*j_j and j_j*j_i).
@@ -55,42 +58,45 @@ def generateBaseMatrix(max_l: int, zhat,
     # (+1,-2) (+1,-1) (+1,+0) (+1,+1) (+1,+2)
     # (+2,-2) (+2,-1) (+2,+0) (+2,+1) (+2,+2)
     #
-    # If (-2,-1) = (-1,-2) then this matrix is reflected around the main diagonal.
+    # If (-2,-1) = (-1,-2) then this matrix is reflected around main diagonal.
     #
-    # The top loop is looping over rows and we evaluate all values of l for rows.
+    # Top loop is looping over rows and we evaluate all values of l for rows.
     # The inner loop is then looping over columns and only needs to go to the
     # main diagonal. Values off the main diagonal are then reflected.
     for ii, i in enumerate(range(-max_l, 1)):
-        temp = sampled_impedance * jdict[i] 
+        temp = sampled_impedance * jdict[i]
         for jj, j in enumerate(range(-max_l, 1)):
             # # For checking value of l'
             # matrix[ii, jj] = j
             # matrix[ii, (2*max_l+1)-1-jj] = -j  # l->l, l'->-l'
-            # matrix[(2*max_l+1)-1 - ii, jj] = j  #l->-l, l'->l'
-            # matrix[(2*max_l+1)-1 - ii, (2*max_l+1)-1 - jj] = -j # l->-l, l'->-l'
+            # matrix[(2*max_l+1)-1-ii, jj] = j  #l->-l, l'->l'
+            # matrix[(2*max_l+1)-1-ii, (2*max_l+1)-1-jj] = -j # l->-l, l'->-l'
 
             matrix[ii, jj] = 1j**(i - j) * np.sum(temp * jdict[j])
 
-            # Since Omega ~ pw_0 + wb is assumed 
+            # Since Omega ~ pw_0 + wb is assumed
             # It is the case that the value of the sampled impedance is the
-            # same for all terms, whilst the bessel function inside the summation
-            # can change. The relationship between signs of order of bessel functions
-            # let us only evaluate for one sign of l and l' then calculate the rest.
-            # We then only evaluate quarter of the overall matrix.
+            # same for all terms, whilst the bessel function inside the
+            # summation can change. The relationship between signs of order
+            # of bessel functions let us only evaluate for one sign of l and l'
+            # then calculate the rest. We then only evaluate quarter of the
+            # overall matrix.
             # i^{l - l'} = (-1)^{l} * i^{-l - l'}
             # i^{l - -l'} = (-1)^{l'} * i^{l - +l'}
             # i^{l - l'} = (-1)^{l + l'} * i^{-l - -l'}
-            # and in both cases J_{-l} = (-1)^l * J_{-l}, so the two factors multiply
-             # (-1)^l * (-1)^l = (-1)^(2l) = +1, and make the matrix elements the same.
-            # To stop using this symmetry comment out the next three lines and replace
+            # and in both cases J_{-l} = (-1)^l * J_{-l}, so the two factors
+            # multiply
+            # (-1)^l * (-1)^l = (-1)^(2l) = +1,
+            # and make the matrix elements the same. To stop using this
+            # symmetry comment out the next three lines and replace
             # the loops for enumerate(range(-max_l, 1)) with enumerate(l)
             #
-            # Note that there is symmetry that is not being exploited here, namely,
+            # Note that there is symmetry not being exploited here, namely,
             # the fact that the airbag is symmetric with l and l'.
-            matrix[ii, (2*max_l+1)-1-jj] = matrix[ii, jj]  # l->l, l'->-l'
-            matrix[(2*max_l+1)-1-ii, jj] = matrix[ii, jj]
-            matrix[(2*max_l+1)-1 - ii, (2*max_l+1)-1 - jj] = matrix[ii, jj]
-            
+            matrix[ii, (2 * max_l + 1) - 1 - jj] = matrix[ii, jj]  # l>l,l'>-l'
+            matrix[(2 * max_l + 1) - 1 - ii, jj] = matrix[ii, jj]
+            matrix[(2 * max_l + 1) - 1 - ii, (2 * max_l + 1) - 1 - jj] = matrix[ii, jj]
+
     return matrix
 
 
@@ -119,8 +125,8 @@ def generateBesselJDict(max_order, x):
     # jdict[0] = sp.j0(x)
     # jdict[1] = sp.j1(x)
     # jdict[-1] = -jdict[1]
-    
-    l = range(0, max_order+1)
+
+    l = range(0, max_order + 1)
 
     for ll in l:
         # Done as loop because sp.jn() is not available for array argument.
