@@ -1,7 +1,7 @@
-import numpy as np                   # Linear algebra and mathematical functions
-import scipy.constants as cn         # Physical constants
-import scipy.integrate as si         # Numerical integration methods (Romberg) 
-# from multiprocessing import Pool     # Performing operations in parallel
+import numpy as np                  # Linear algebra and mathematical functions
+import scipy.constants as cn        # Physical constants
+import scipy.integrate as si        # Numerical integration methods (Romberg)
+# from multiprocessing import Pool  # Performing operations in parallel
 
 
 # ====== General Maths Functions
@@ -10,22 +10,24 @@ factorial_lookup = np.array([
     np.math.factorial(i) for i in range(150)
 ], dtype=np.float64)
 
+
 def factorial(n):
     return factorial_lookup[n]
 
-def rising_fact(z: complex, n:int) -> complex:
-    '''    
+
+def rising_fact(z: complex, n: int) -> complex:
+    '''
     Calculates the rising factorial of z, often written
     (z)^n = z * (z+1) * (z+2) * (z+3) ... (z+n-1)
     although (z)_n is also used; although that is also sometimes
     used for the falling factorial, so check the definitions.
     This notation is referred to as Pochammer's Symbol, see
-    Abramowitz & Stegun, 6.1.22 
+    Abramowitz & Stegun, 6.1.22
     '''
     total = 1
     for k in range(n):
-        total *= (z+k)
-    
+        total *= (z + k)
+
     return total
 
 
@@ -35,25 +37,26 @@ def Lna(n:int, alpha:float, z:complex) -> complex:
     with the condition that n, a are real, and z is in general complex.
     Whilst Laguerre polynomials are only orthogonal for a > -1, they
     can be calculated for the case where a <= -1.
-    
+
     This definition comes from https://doi.org/10.4134/CKMS.c200208
     Specifically equation 15, with p=1, as specified after Equation 6.
     '''
     total = np.zeros(len(z), dtype=np.float64)
-    for k in range(n+1):        
-        total += (-1)**k / factorial(k) / factorial(n-k) * rising_fact(k+alpha+1, n-k) * z**k
-    
+    for k in range(n + 1):
+        total += ((-1)**k / factorial(k) / factorial(n - k)
+                  * rising_fact(k + alpha + 1, n - k) * z**k)
+
     return total
 
 
 # =========== Functions for Unperturbed Distribution ===========
 
-def Ilnk(w:float, a:float, l:int, n:int, k:int) -> float:
+def Ilnk(w: float, a: float, l: int, n: int, k: int, beta: float) -> float:
     '''
     Not used in practice to avoid re-computing constants. Left for research.
-    
+
     w = (w' - w_{xi})
-    a = constant factor used in the Laguerre series expansion of the unperturbed distribution
+    a = constant used in Laguerre series expansion of unperturbed distribution
     l = azimuthal mode number
     n = radial mode number
     k = sum index
@@ -61,24 +64,30 @@ def Ilnk(w:float, a:float, l:int, n:int, k:int) -> float:
     absl = abs(l)
     absw = abs(w)
     sigma = 0
-    
-    return (np.sign(w*l))**absl * (-1)**(n+k) * (absw/beta/cn.c/2/a)**absl * np.exp(-absw**2/beta**2/cn.c**2/4/a) * Lna(n, sigma-n+k, absw**2/beta**2/cn.c**2/4/a) * Lna(k, absl-sigma+n-k, absw**2/beta**2/cn.c**2/4/a)
+
+    return ((np.sign(w * l))**absl
+            * (-1)**(n + k)
+            * (absw / beta / cn.c / 2 / a)**absl
+            * np.exp(-absw**2 / beta**2 / cn.c**2 / 4 / a)
+            * Lna(n, sigma - n + k, absw**2 / beta**2 / cn.c**2 / 4 / a)
+            * Lna(k, absl - sigma + n - k,
+                  absw**2 / beta**2 / cn.c**2 / 4 / a))
 
 
-def Gksum(w:float, a:float, l:int, n:int, Gk_array):
+def Gksum(w: float, a: float, l: int, n: int, Gk_array):
     '''
     Not used in practice to avoid re-computing constants. Left for research.
-    
-    Computes 
+
+    Computes
     Sum_{k=0}^{len(Gk_array)} G_{k} * I _{lnk}(w, a, l, n, k)
-    
+
     Where G_{k} is an array of pre-computed coefficients of a Laguerre series,
     and I_{lnk} is defined in the function Ilnk(w, a, l, n, k).
     '''
     total = 0
     for k, Gk in enumerate(Gk_array):
         total += Gk * Ilnk(w, a, l, n, k)
-    
+
     return total
 
 
@@ -88,129 +97,137 @@ def generateGksumDict(Gk_array, w, a, max_l, max_n, beta):
     dictionary of values. This is usually used to avoid having to recompute
     Gksum for every element of the matrix (size (max_n*(2*max_l + 1))**2)
     when there are only (max_n*(2*max_l + 1)) possible combinations of l and n.
-    
-    max_l = positive integer with the maximum value (l = -max_l, ..., -1, 0, 1, ..., max_l)
-    max_n = positive integer with maximum value (n = 0, 1, 2, ..., n-1, n)
+
+    max_l = positive integer (l = -max_l, ..., -1, 0, 1, ..., max_l)
+    max_n = positive integer (n = 0, 1, 2, ..., n-1, n)
 
     '''
     Gksum_dict = {}
-    
+
     # pre-calculate any variables which don't depend on l, n or k
     # outside of the loops.
     absw = np.abs(w)
     signw = np.sign(w)
-    const_1 = absw/beta/cn.c/2/a
-    lna_argument = absw**2/beta**2/cn.c**2/4/a
+    const_1 = absw / beta / cn.c / 2 / a
+    lna_argument = absw**2 / beta**2 / cn.c**2 / 4 / a
     coef = np.exp(-lna_argument)
     sigma = 0
-    n_array = np.zeros(shape=(max_n+1, len(w)), dtype=np.float64)  # preallocate some memory
-    for l in range(max_l+1):
-        
-        
+
+    # preallocate some memory
+    n_array = np.zeros(shape=(max_n + 1, len(w)), dtype=np.float64)
+    for l in range(max_l + 1):
         # Calculate everything that depends only on l (not n or k)
         # outside of the nested loops
         coef_l = signw**l * (const_1)**l
-        
-        for n in range(max_n+1):
-            
+
+        for n in range(max_n + 1):
             # Now we loop over k, calculate the result of the integral,
             # multiply by the Laguerre series coefficient and add it.
             # total is the result of this summation.
             total = np.zeros(len(w))
-            for k, Gk in enumerate(Gk_array) :
-                total += Gk * (-1)**(n+k) * Lna(n, sigma-n+k, lna_argument) * Lna(k, l-sigma+n-k, lna_argument)
-            
+            for k, Gk in enumerate(Gk_array):
+                total += (Gk * (-1)**(n + k)
+                          * Lna(n, sigma - n + k, lna_argument)
+                          * Lna(k, l - sigma + n - k, lna_argument))
+
             n_array[n] = total
 
         Gksum_dict[l] = coef_l * coef * n_array
         Gksum_dict[-l] = (-1)**l * Gksum_dict[l]
-    
+
     return Gksum_dict
+
 
 def g0Hat(r, a, Gk):
     total = np.zeros(len(r), dtype=np.float64)
     for k, i in enumerate(Gk):
-        total += i * Lna(k, 0, a*r**2)
+        total += i * Lna(k, 0, a * r**2)
 
-    return np.exp(-a*r**2)*total
+    return np.exp(-a * r**2) * total
 
 # =========== Functions for Perturbed Distribution ===========
 
-def Qln(w:float, a:float, l:int, n:int, beta:float) -> float:
+
+def Qln(w: float, a: float, l: int, n: int, beta: float) -> float:
     '''
     Not used in practice to avoid re-computing constants. Left for research.
 
     Returns the result Q_{l'n'} which is the coefficient of alpha_{l'n'}
     in the Vlasov equation.
     w = (w' - w_{xi})
-    a = constant factor used in the Laguerre series expansion of the unperturbed distribution
+    a = constant used in Laguerre series expansion of unperturbed distribution
     l = azimuthal mode number
     n = radial mode number
     '''
     absl = abs(l)
     sqrta = np.sqrt(a)
-    
-    return np.sign(l)**absl * a**(absl/2 - 1) * 1/(2*np.math.factorial(n)) * (1/2/sqrta * w / beta / cn.c)**(2*n + absl) * np.exp(-1/4/a * w**2/beta**2/cn.c**2)
+
+    return (np.sign(l)**absl
+            * a**(absl / 2 - 1) * 1 / (2 * np.math.factorial(n))
+            * (1 / 2 / sqrta * w / beta / cn.c)**(2 * n + absl)
+            * np.exp(-1 / 4 / a * w**2 / beta**2 / cn.c**2))
 
 
 def generateQlnDict(w: float, a:float, max_l:int, max_n:int, beta:float) -> float:
     '''
     w = (w' - w_{xi})
-    a = constant factor used in the Laguerre series expansion of the unperturbed distribution
+    a = constant used in Laguerre series expansion of unperturbed distribution
     max_l = maximum azimuthal mode number
     max_n = maximum radial mode number
-    
+
     Calculates Q_{ln}(w' - w_{xi}) for different combinations of
     l and n and returns the result in a dictionary. This is to avoid
-    having to recompute Q_{ln} for the same combinations of l and n more than once.
+    having to recompute Q_{ln} for same combinations of l and n more than once.
     '''
     Qln_dict = {}
-    
+
     # Any parts of the formula that don't depend on n or l don't
     # need to be performed inside the loop. Doing them outside
-    # speeds up these calculations. 
+    # speeds up these calculations.
     sqrta = np.sqrt(a)
-    coef = np.exp(-1/4/a * w**2/beta**2/cn.c**2)
-    const_1 = 1/2/sqrta * w / beta / cn.c
-    
+    coef = np.exp(-1 / 4 / a * w**2 / beta**2 / cn.c**2)
+    const_1 = 1 / 2 / sqrta * w / beta / cn.c
+
     # This factorial only depends on n, not l.
     # If it is computed inside the loop then np.math.factorial will
     # run len(ll) * len(nn) times, but it only needs to be performed
     # len(nn) times. Calculate all the factorials first, then index
     # them inside the loop.
-    facn = factorial(np.arange(int(max_n)+1))
-    
+    facn = factorial(np.arange(int(max_n) + 1))
+
     # n starts from zero, so can select n from the index of the array
     # rather than using a dictionary.
-    n_array = np.zeros(shape=(max_n+1, len(w)))
-    
+    n_array = np.zeros(shape=(max_n + 1, len(w)))
+
     # only positive values of l, and symmetry will be used to
     # find the value for the corresponding negative values
-    for l in range(max_l+1):
-        for n in range(max_n+1):
-            n_array[n] = 1/(2*facn[n]) * (const_1)**(2*n + l)
-                
+    for l in range(max_l + 1):
+        for n in range(max_n + 1):
+            n_array[n] = 1 / (2 * facn[n]) * (const_1)**(2 * n + l)
+
         # multiply the coefficients now, not inside n loop
-        Qln_dict[l] = coef * a**(l/2 - 1) * n_array
+        Qln_dict[l] = coef * a**(l / 2 - 1) * n_array
         Qln_dict[-l] = (-1)**l * Qln_dict[l]
-    
+
     return Qln_dict
 
-def calculateg1Point(a, eigenvectors, r, phi, max_l, max_n, beta, chromaticity, w_b, eta):
+
+def calculateg1Point(a, eigenvectors, r, phi, max_l, max_n,
+                     beta, chromaticity, w_b, eta):
     '''
     r - float, the radial coordinate to evaluate g_1(r, phi)
     phi - float, the angular coordinate to evaluate g_1(r, phi)
     eigenvectors - list, a list containing all eigenvectors
     eigenvalue_index - integer, the eigenvalue for which to compute g_1(r, phi)
-    
+
     This function evaluates g_1(r, phi) for a particular eigenvalue.
     It takes the eigenvectors associated with a particular eigenvalue
     and then performs the summations required to produce a distribution.
     '''
-    l_list = np.arange(-int(max_l), int(max_l)+1)
-    
-    ar2 = np.exp(-a*r**2)  # calculate this outside the loop for speed
-    
+    l_list = np.arange(-int(max_l), int(max_l) + 1)
+
+    ar2 = np.exp(-a * r**2)  # calculate this outside the loop for speed
+
     # The eigenvectors are in the order of
     # alpha_{l=-10,n=0}
     # alpha_{l=-9, n=0}
@@ -219,7 +236,7 @@ def calculateg1Point(a, eigenvectors, r, phi, max_l, max_n, beta, chromaticity, 
     # alpha_{l=-10,n=1}
     # alpha_{l=-9, n=1}
     # ...
-    # 
+    #
     # So for each value of n we want to sum over all the different values
     # of l. There are (2*max_l + 1) values of l (e.g. -3, -2, -1, 0, 1, 2, 3).
     # So list of eigenvectors corresponding to n have the starting
@@ -328,25 +345,26 @@ def generateBaseMatrix(max_l:int, max_n:int, a:float, Gk:np.ndarray,
     w_xi  = head-tail phase shift angle
     '''
     fp = sample_frequencies
-    wp = 2*np.pi*fp
-    w = wp-w_xi
-        
+    wp = 2 * np.pi * fp
+    w = wp - w_xi
+
     # Make a list of all the values of l that will be calculated, this gets repeated a few times
-    l = np.arange(-int(max_l), int(max_l)+1)
-    
+    l = np.arange(-int(max_l), int(max_l) + 1)
+
     # # Preliminarily work out all of the sum of Gk * Integrals
     Gksums = generateGksumDict(Gk, w, a, max_l, max_n, beta)
-    
+
     # # Preliminarily work out all values of Q_{l'n'}
     Qln_vals = generateQlnDict(w, a, max_l, max_n, beta)
-    
+
     # Generate coefficients which depend on n
     gamma_coef = generateFactCoefficient(max_l, max_n)
-    
+
     # Allocate memory for the matrix
-    matrix = np.zeros(shape=((2*max_l+1)*(max_n+1),
-                             (2*max_l+1)*(max_n+1)), dtype=np.complex128)
-    
+    matrix = np.zeros(shape=((2 * max_l + 1) * (max_n + 1),
+                             (2 * max_l + 1) * (max_n + 1)),
+                      dtype=np.complex128)
+
     # populate the matrix
     # If max_l=2, and max_n=1 the values of (l, l') are
     #                  n' = 0                                     n' = 1
@@ -370,7 +388,7 @@ def generateBaseMatrix(max_l:int, max_n:int, a:float, Gk:np.ndarray,
                 temp = Gksums[i][nn] * sampled_impedance  # calculate this outside the next loop for speed
                 for jj, j in enumerate(range(-max_l, 1)):  # cols, l'
                         matrix[nn*lenl + ii, nnp*lenl + jj] = (1j)**(i-j)*gamma_coef[np.abs(i)][nn]*np.sum(Qln_vals[j][nnp] * temp)
-                        
+
                         # The next three lines are utilising symmetry between (l, -l) and (l', -l')
                         #
                         # The factor i^{l - l'} has to be updated for the sign of l. 

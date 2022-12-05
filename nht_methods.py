@@ -61,8 +61,8 @@ def generateBaseMatrix(max_l: int, ring_radii,
                     matrix[ring1*lenl + ii, ring2*lenl + lenl - jj -1] = matrix[ring1*lenl + ii, ring2*lenl + jj]
                     matrix[ring1*lenl + lenl - ii -1, ring2*lenl + lenl - jj -1] = matrix[ring1*lenl + ii, ring2*lenl + jj]
 
-
     return matrix
+
 
 # ============== Compile Code Above
 # If the optional dependency numba is available then the code below
@@ -90,44 +90,46 @@ def calculateRingRadii(g0hat, num_rings, search_limit):
     region extending to infinity and each ring containing the same
     number of particles N' = N/num_rings. This function returns one
     ring radius per region, where half the charge in a region is
-    inside the ring and half is outside. 
-    
-    g0hat - function for the unperturbed distribution, with normalisation applied.
+    inside the ring and half is outside.
+
+    g0hat - function for unperturbed distribution, with normalisation applied.
     num_rings - number of rings to represent g0hat with
     search_limit - radial position to limit search for ring radii.
-                   Typically this is a bit larger than the distribution's "radius",
-                   for example, for a gaussian a typical number of standard deviations
-                   might be 6 - 10. If this is set to be too high, then the algorithm
-                   will struggle to converge.
-                   
+                   Typically this is a bit larger than distribution's "radius",
+                   for example, 6-10 standard deviations might be typical for a
+                   gaussian distribution. If this is set too high, then the
+                   algorithm will struggle to converge.
     '''
     assert type(num_rings) == int, "num_rings must be an integer."
     assert num_rings > 0, "num_rings must be a positive integer."
     assert search_limit > 0, "Search limit must be positive."
-    
-    target = 1/(num_rings)
+
+    target = 1 / num_rings
     region_midpoints = [0]
-              
+
     def wrapper(upper_limit, lower_limit, target):
-        mult = 1
-        result = si.romberg(lambda r: r*g0hat(r), lower_limit, upper_limit)[0] - target    
+        result = si.romberg(lambda r: r * g0hat(r),
+                            lower_limit, upper_limit)[0] - target
         return result
 
     for i in range(num_rings):
         try:
             midpoint = so.root_scalar(wrapper,
-                                      args=(0, (i + 0.5)*target),
+                                      args=(0, (i + 0.5) * target),
                                       method='bisect',
-                                      bracket=[region_midpoints[i], search_limit], # between the last ring and the limit
+                                      bracket=[region_midpoints[i],
+                                               search_limit],
+                                      # between the last ring and the limit
                                       ).root
-            
+
             region_midpoints.append(midpoint)
-            
+
         except:
-            raise Exception(f"Root finder or integral failed to converge.\n" + 
-                            f"This is probably because search_limit is too high and the number of " + 
-                            f"loops of the root finder has been exceeded. It could also be because " +
-                            f"search_limit is too small, so that the root finder can't identify a suitable radius.")
+            raise Exception(
+                f"Root finder or integral failed to converge.\n" + 
+                f"This is probably because search_limit is too high and the number of " + 
+                f"loops of the root finder has been exceeded. It could also be because " +
+                f"search_limit is too small, so that the root finder can't identify a suitable radius.")
     
     ring_radii = np.array(region_midpoints[1:])
     return ring_radii
