@@ -126,10 +126,10 @@ def calculateRingRadii(g0hat, num_rings, search_limit):
 
         except:
             raise Exception(
-                f"Root finder or integral failed to converge.\n" + 
-                f"This is probably because search_limit is too high and the number of " + 
-                f"loops of the root finder has been exceeded. It could also be because " +
-                f"search_limit is too small, so that the root finder can't identify a suitable radius.")
+                "Root finder or integral failed to converge.\n"
+                + "This is probably because search_limit is too high and the number of " + 
+                + "loops of the root finder has been exceeded. It could also be because " +
+                + "search_limit is too small, so that the root finder can't identify a suitable radius.")
     
     ring_radii = np.array(region_midpoints[1:])
     return ring_radii
