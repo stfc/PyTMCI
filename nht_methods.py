@@ -4,7 +4,7 @@ import scipy.constants as cn         # Physical constants
 import scipy.integrate as si         # Numerical integration methods (Romberg) 
 import scipy.optimize as so          # Root finding
 
-def generateBaseMatrix(max_l: int, ring_radii,
+def generateSimpleBaseMatrix(max_l: int, ring_radii,
                        sampled_frequencies: np.ndarray, sampled_impedance: np.ndarray,
                        f0:float, num_bunches:float, beta:float, w_b:float, w_xi:float) -> np.ndarray:
     num_rings = len(ring_radii)
@@ -26,7 +26,7 @@ def generateBaseMatrix(max_l: int, ring_radii,
     # was index 4.
     jdict = []
     for i in ring_radii:
-        jdict.append(am.generateBesselJDict(max_l, w*i/beta/cn.c))
+        jdict.append(am.generateBesselJDict(max_l, w*i/beta/cn.c)[0])
 
     # Allocate memory for the matrix
     matrix = np.zeros(shape=((2*max_l+1)*num_rings,
@@ -53,7 +53,9 @@ def generateBaseMatrix(max_l: int, ring_radii,
     for ring1 in range(num_rings):  # rows, n
         for ring2 in range(num_rings):  # cols, n'
             for ii, i in enumerate(range(-max_l, 1)):  # rows, l
-                temp = jdict[ring1][i] * sampled_impedance
+
+                # Index the sampled impedance with 0*w_s in the frequency to make the 
+                temp = jdict[ring1][i] * sampled_impedance[0]
                 for jj, j in enumerate(range(-max_l, 1)):  # cols, l'
                     matrix[ring1*lenl + ii, ring2*lenl + jj] = 1/num_rings * np.sum(temp * jdict[ring2][j])
                     

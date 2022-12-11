@@ -3,7 +3,7 @@ import scipy.constants as cn        # Physical constants
 import scipy.special as sp
 
 
-def generateBaseMatrix(max_l: int, zhat,
+def generateSimpleBaseMatrix(max_l: int, zhat,
                        sampled_frequencies: np.ndarray,
                        sampled_impedance: np.ndarray,
                        f0: float, num_bunches: float,
@@ -11,26 +11,10 @@ def generateBaseMatrix(max_l: int, zhat,
     '''
     Provided l*ws is neglected in the frequency sampling, the bessel functions
     and impedance are sampled at the same frequency for every matrix element.
-    In previous versions of this code the impedance and bessel functions were
-    evaluated for every matrix element (as you would write it down in maths).
-    This meant recalculating the same numbers repeatedly.
-
-    In a subsequent version of the code the impedance and bessel functions were
-    evaluated once, before the matrix was populated, and then the results were
-    just multiplied and summed for the matrix elements.
-
-    It was noted however that this still meant evaluating the impedance and
-    bessel functions once for every value of protons_per_bunch, which happed
-    something like 50 times. To avoid this the impedance and bessel functions
-    are evaluated once, then the results passed to the matrix builder function.
-    This function is for evaluating the impedance and bessel functions.
     '''
-    fp = sampled_frequencies  # Skipping l*omega_s
+    fp = sampled_frequencies[0]
     wp = 2 * np.pi * fp
     w = wp - w_xi
-
-    # Make a list of all values of l to be used, this gets repeated
-    l = np.arange(-int(max_l), int(max_l) + 1)
 
     # Preliminarily work out all of the required bessel functions. This avoids
     # calling them inside the nested loop since we only need to calculate J for
@@ -40,6 +24,9 @@ def generateBaseMatrix(max_l: int, zhat,
     # (e.g. if we set matrixSize=6 i=(-3, -2, -1, 0, 1, 2, 3) etc)
     # to index, whereas if we used an array we'd have to work out what that l=1
     # was index 4.
+    #
+    # We index 0 here, so that we're sampling the frequency with 0 * w_s in the
+    # sample frequency.
     jdict = generateBesselJDict(max_l, w * zhat / beta / cn.c)
 
     # Allocate memory for the matrix
@@ -64,7 +51,7 @@ def generateBaseMatrix(max_l: int, zhat,
     # The inner loop is then looping over columns and only needs to go to the
     # main diagonal. Values off the main diagonal are then reflected.
     for ii, i in enumerate(range(-max_l, 1)):
-        temp = sampled_impedance * jdict[i]
+        temp = sampled_impedance[0] * jdict[i]
         for jj, j in enumerate(range(-max_l, 1)):
             # # For checking value of l'
             # matrix[ii, jj] = j
@@ -100,6 +87,53 @@ def generateBaseMatrix(max_l: int, zhat,
     return matrix
 
 
+def generateFullBaseMatrix(max_l: int, zhat,
+                           sampled_frequencies: np.ndarray,
+                           sampled_impedance: np.ndarray,
+                           f0: float, num_bunches: float,
+                           beta: float, w_b: float, w_xi: float) -> np.ndarray:
+    '''
+
+    '''
+    fp = sampled_frequencies
+    wp = 2 * np.pi * fp
+    w = wp - w_xi
+
+    # Make a list of all values of l to be used, this gets repeated
+    l = np.arange(-int(max_l), int(max_l) + 1)
+
+    # Preliminarily work out all of the required bessel functions. This avoids
+    # calling them inside the nested loop since we only need to calculate J for
+    # each value of l.
+    #
+    # By making this a dictionary rather than an array we can still use i and j
+    # (e.g. if we set matrixSize=6 i=(-3, -2, -1, 0, 1, 2, 3) etc)
+    # to index, whereas if we used an array we'd have to work out what that l=1
+    # was index 4.
+    jdict = generateBesselJDict(max_l, w * zhat / beta / cn.c)
+
+    # Allocate memory for the matrix
+    matrix = np.zeros(shape=(2 * max_l + 1, 2 * max_l + 1),
+                      dtype=np.complex128)
+
+    # populate the matrix
+    # Top loop is looping over rows and we evaluate all values of l for rows.
+    # The inner loop is then looping over columns and only needs to go to the
+    # main diagonal. Values off the main diagonal are then reflected.
+    for ii, i in enumerate(l):
+        temp = sampled_impedance[i] * jdict[i][i]
+        for jj, j in enumerate(l):
+            # # For checking value of l'
+            # matrix[ii, jj] = j
+            # matrix[ii, (2*max_l+1)-1-jj] = -j  # l->l, l'->-l'
+            # matrix[(2*max_l+1)-1-ii, jj] = j  #l->-l, l'->l'
+            # matrix[(2*max_l+1)-1-ii, (2*max_l+1)-1-jj] = -j # l->-l, l'->-l'
+
+            matrix[ii, jj] = 1j**(i - j) * np.sum(temp * jdict[i][j])
+
+    return matrix
+
+
 def generateBesselJDict(max_order, x):
     '''
     n is an integer with the values
@@ -117,22 +151,13 @@ def generateBesselJDict(max_order, x):
     jdict[2] = J_2(x)
     etc
     '''
-    jdict = {}
+    jdict = np.zeros((2 * max_order + 1, 2 * max_order + 1, len(x[0])), dtype=np.float64)
 
-    # Makes use of the fact that J_(-n)(x) = (-1)**n * J_n(x)
-    # to reduce the number of calls to jv function and speed up calculation.
-    # https://dlmf.nist.gov/10.4.E1
-    # jdict[0] = sp.j0(x)
-    # jdict[1] = sp.j1(x)
-    # jdict[-1] = -jdict[1]
-
-    l = range(0, max_order + 1)
+    l = range(-max_order, max_order + 1)
 
     for ll in l:
-        # Done as loop because sp.jn() is not available for array argument.
-        # Might change?
-        jdict[ll] = np.array([sp.jn(float(ll), i) for i in x])
-        jdict[-ll] = (-1)**(ll) * jdict[ll]  # faster than using jv again
+        for lp in l:
+            jdict[ll, lp] = np.array([sp.jn(float(lp), i) for i in x[ll]])
 
     return jdict
 

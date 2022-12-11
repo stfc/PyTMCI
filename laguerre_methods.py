@@ -327,7 +327,7 @@ def generateLMatrix(max_l, max_n):
     return matrix
 
 
-def generateBaseMatrix(max_l:int, max_n:int, a:float, Gk:np.ndarray,
+def generateSimpleBaseMatrix(max_l:int, max_n:int, a:float, Gk:np.ndarray,
                        sample_frequencies, sampled_impedance:np.ndarray,
                         f0:float, num_bunches:float, beta:float, w_b:float, w_xi:float) -> np.ndarray:
 
@@ -344,9 +344,11 @@ def generateBaseMatrix(max_l:int, max_n:int, a:float, Gk:np.ndarray,
     w_b   = angular betatron frequency (2pi * Q * f0)
     w_xi  = head-tail phase shift angle
     '''
-    fp = sample_frequencies
+    fp = sample_frequencies[0]
     wp = 2 * np.pi * fp
     w = wp - w_xi
+
+    sampled_impedance = sampled_impedance[0]
 
     # Make a list of all the values of l that will be calculated, this gets repeated a few times
     l = np.arange(-int(max_l), int(max_l) + 1)

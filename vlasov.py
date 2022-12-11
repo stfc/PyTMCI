@@ -62,9 +62,16 @@ class vlasovSolver():
                              + "the number of bunches.")
 
         p = np.arange(-max_harmonics, max_harmonics + 1, dtype=np.float64)
-        fp = ((p * self.accelerator.num_bunches + multi_bunch_mode) * self.accelerator.f0
-              + self.accelerator.w_b / 2 / np.pi)
-        # note we're skipping the l*omega_s
+
+        ll = range(-self.max_l, self.max_l + 1)
+
+        fp = np.zeros((len(ll), len(p)))
+        for i in ll:
+            fp[i] = ((p * self.accelerator.num_bunches
+                      + multi_bunch_mode) * self.accelerator.f0
+                     + self.accelerator.w_b / 2 / np.pi
+                     + i * self.accelerator.w_s / 2 / np.pi)
+
         return fp
 
     def calculateGk(self):
@@ -112,12 +119,25 @@ class airbag(vlasovSolver):
         super().__init__(accelerator, max_l, 0)
         self.zhat = zhat
 
-    def generateBaseMatrix(self, sample_frequencies, sampled_dipole_impedance):
-        self.base_matrix = am.generateBaseMatrix(
-            self.max_l, self.zhat,
-            sample_frequencies, sampled_dipole_impedance,
-            self.accelerator.f0, self.accelerator.num_bunches,
-            self.accelerator.beta, self.accelerator.w_b, self.accelerator.w_xi)
+    def generateBaseMatrix(self, method, sample_frequencies, sampled_dipole_impedance):
+
+        if method == "perturbed-simple":
+            self.base_matrix = am.generateSimpleBaseMatrix(
+                self.max_l, self.zhat,
+                sample_frequencies, sampled_dipole_impedance,
+                self.accelerator.f0, self.accelerator.num_bunches,
+                self.accelerator.beta,
+                self.accelerator.w_b, self.accelerator.w_xi)
+
+        elif method == "perturbed-full":
+            self.base_matrix = am.generateFullBaseMatrix(
+                self.max_l, self.zhat,
+                sample_frequencies, sampled_dipole_impedance,
+                self.accelerator.f0, self.accelerator.num_bunches,
+                self.accelerator.beta,
+                self.accelerator.w_b, self.accelerator.w_xi)
+        else:
+            raise ValueError("Invalid method.")
 
         return self.base_matrix
 
@@ -134,16 +154,20 @@ class NHT(vlasovSolver):
                                                  search_limit)
         return self.ring_radii
 
-    def generateBaseMatrix(self, sample_frequencies, sampled_dipole_impedance):
+    def generateBaseMatrix(self, method, sample_frequencies, sampled_dipole_impedance):
         if len(self.ring_radii) != self.num_rings:
             raise Exception("Calculate ring radii first.")
             return self.base_matrix
 
-        self.base_matrix = nht.generateBaseMatrix(
-            self.max_l, self.ring_radii,
-            sample_frequencies, sampled_dipole_impedance,
-            self.accelerator.f0, self.accelerator.num_bunches,
-            self.accelerator.beta, self.accelerator.w_b, self.accelerator.w_xi)
+        if method == "perturbed-simple":
+            self.base_matrix = nht.generateSimpleBaseMatrix(
+                self.max_l, self.ring_radii,
+                sample_frequencies, sampled_dipole_impedance,
+                self.accelerator.f0, self.accelerator.num_bunches,
+                self.accelerator.beta,
+                self.accelerator.w_b, self.accelerator.w_xi)
+        else:
+            raise ValueError("Invalid method.")
 
         return self.base_matrix
 
@@ -169,18 +193,22 @@ class arbitraryLongitudinal(vlasovSolver):
     def g0Hat(self, r):
         return lm.g0Hat(r, self.a, self.Gk)
 
-    def generateBaseMatrix(self, sample_frequencies, sampled_dipole_impedance):
+    def generateBaseMatrix(self, method, sample_frequencies, sampled_dipole_impedance):
         if len(self.Gk) == 0:
             raise Exception("Unperturbed longitudinal distribution has not"
                             + "been fit. \n Run calculateGk() before"
                             + "calculating a base matrix.")
             return self.base_matrix
 
-        self.base_matrix = lm.generateBaseMatrix(
-            self.max_l, self.max_n, self.a, self.Gk,
-            sample_frequencies, sampled_dipole_impedance,
-            self.accelerator.f0, self.accelerator.num_bunches,
-            self.accelerator.beta, self.accelerator.w_b, self.accelerator.w_xi)
+        if method == "perturbed-simple":
+            self.base_matrix = lm.generateSimpleBaseMatrix(
+                self.max_l, self.max_n, self.a, self.Gk,
+                sample_frequencies, sampled_dipole_impedance,
+                self.accelerator.f0, self.accelerator.num_bunches,
+                self.accelerator.beta,
+                self.accelerator.w_b, self.accelerator.w_xi)
+        else:
+            raise ValueError("Invalid method.")
 
         return self.base_matrix
 
