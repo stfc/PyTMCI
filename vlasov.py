@@ -81,6 +81,40 @@ class vlasovSolver():
         pass
 
     def generateBaseMatrix(self):
+        '''
+        Generate the base interaction matrix given the impedance sample
+        frequencies and an array of transverse dipole impedances sampled at
+        these frequencies.
+
+        The method parameter specifies what assumptions are made when
+        producing the base matrix, which can reduce computational time
+        with no impact on results if used properly, or give totally inaccurate
+        results if used improperly.
+
+        For all methods that are 'perturbed-*', use impedanceSampleFrequencies
+        helper function to generate the frequencies.
+
+        Possible methods are:
+        'perturbed-full' -   Assumes Ω ≈ ⍵_{β} + l * ⍵_{s} from Chao's
+                             Equation 6.184. Assumes that deviation from
+                             the wake-free or low intensity (N=0) case is
+                             small. See Chao's equation for full description.
+                             Available symmetry is limited, so this can be
+                             resource intensive.
+
+        'perturbed-simple' - Assumes Ω ≈ ⍵_{β}, neglecting (l * ⍵_{s})
+                             from Chao's Equation 6.184.
+                             Makes same assumptions as perturbed-full, but
+                             is only reasonable provided ⍵_{β} >> ⍵_{s}, the
+                             impedance is smooth with a resolution of ⍵_{s}
+                             and l is not too large.
+                             May not be a good assumption if the impedance
+                             has a resonance with width on the order of ⍵_{s}.
+                             By making this assumption, all functions are
+                             evaluated at the same frequencies, significantly
+                             reducing computation time by exploiting symmetry.
+
+        '''
         pass
 
     def generateLMatrix(self):
@@ -120,7 +154,6 @@ class airbag(vlasovSolver):
         self.zhat = zhat
 
     def generateBaseMatrix(self, method, sample_frequencies, sampled_dipole_impedance):
-
         if method == "perturbed-simple":
             self.base_matrix = am.generateSimpleBaseMatrix(
                 self.max_l, self.zhat,
@@ -193,7 +226,8 @@ class arbitraryLongitudinal(vlasovSolver):
     def g0Hat(self, r):
         return lm.g0Hat(r, self.a, self.Gk)
 
-    def generateBaseMatrix(self, method, sample_frequencies, sampled_dipole_impedance):
+    def generateBaseMatrix(self, method,
+                           sample_frequencies, sampled_dipole_impedance):
         if len(self.Gk) == 0:
             raise Exception("Unperturbed longitudinal distribution has not"
                             + "been fit. \n Run calculateGk() before"
