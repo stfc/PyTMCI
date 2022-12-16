@@ -8,7 +8,7 @@ def generateSimpleBaseMatrix(max_l: int, ring_radii,
                        sampled_frequencies: np.ndarray, sampled_impedance: np.ndarray,
                        f0:float, num_bunches:float, beta:float, w_b:float, w_xi:float) -> np.ndarray:
     num_rings = len(ring_radii)
-    fp = sampled_frequencies
+    fp = sampled_frequencies[0]
         
     wp = 2*np.pi*fp
     w = wp-w_xi
@@ -26,7 +26,7 @@ def generateSimpleBaseMatrix(max_l: int, ring_radii,
     # was index 4.
     jdict = []
     for i in ring_radii:
-        jdict.append(am.generateBesselJDict(max_l, w*i/beta/cn.c)[0])
+        jdict.append(am.generateBesselJDict(max_l, w*i/beta/cn.c))
 
     # Allocate memory for the matrix
     matrix = np.zeros(shape=((2*max_l+1)*num_rings,

@@ -34,7 +34,8 @@ def generateSimpleBaseMatrix(max_l: int, zhat,
                       dtype=np.complex128)
 
     # populate the matrix
-    # Note that since this is the sum j_i * j_j, that it doesn't matter the
+    # Note that since this is the sum J_{i} * J_{j}, and the frequencies are
+    # same for both bessel functions, it doesn't matter the
     # order of the orders(there is no difference between j_i*j_j and j_j*j_i).
     # As such we only need an upper or a lower triangular matrix and then the
     # result will be mirrored. For example if max_l=2, the order of the
@@ -105,12 +106,9 @@ def generateFullBaseMatrix(max_l: int, zhat,
     # Preliminarily work out all of the required bessel functions. This avoids
     # calling them inside the nested loop since we only need to calculate J for
     # each value of l.
-    #
-    # By making this a dictionary rather than an array we can still use i and j
-    # (e.g. if we set matrixSize=6 i=(-3, -2, -1, 0, 1, 2, 3) etc)
-    # to index, whereas if we used an array we'd have to work out what that l=1
-    # was index 4.
-    jdict = generateBesselJDict(max_l, w * zhat / beta / cn.c)
+    jdict = []
+    for i in w:
+        jdict.append(generateBesselJDict(max_l, i * zhat / beta / cn.c))
 
     # Allocate memory for the matrix
     matrix = np.zeros(shape=(2 * max_l + 1, 2 * max_l + 1),
@@ -118,17 +116,11 @@ def generateFullBaseMatrix(max_l: int, zhat,
 
     # populate the matrix
     # Top loop is looping over rows and we evaluate all values of l for rows.
-    # The inner loop is then looping over columns and only needs to go to the
-    # main diagonal. Values off the main diagonal are then reflected.
+    # The inner loop is then looping over columns which are for values of l'.
+    # Symmetry here is limited because l changes the sample frequencies.
     for ii, i in enumerate(l):
         temp = sampled_impedance[i] * jdict[i][i]
         for jj, j in enumerate(l):
-            # # For checking value of l'
-            # matrix[ii, jj] = j
-            # matrix[ii, (2*max_l+1)-1-jj] = -j  # l->l, l'->-l'
-            # matrix[(2*max_l+1)-1-ii, jj] = j  #l->-l, l'->l'
-            # matrix[(2*max_l+1)-1-ii, (2*max_l+1)-1-jj] = -j # l->-l, l'->-l'
-
             matrix[ii, jj] = 1j**(i - j) * np.sum(temp * jdict[i][j])
 
     return matrix
@@ -151,13 +143,13 @@ def generateBesselJDict(max_order, x):
     jdict[2] = J_2(x)
     etc
     '''
-    jdict = np.zeros((2 * max_order + 1, 2 * max_order + 1, len(x[0])), dtype=np.float64)
+    jdict = np.zeros((2 * max_order + 1, len(x)))
 
-    l = range(-max_order, max_order + 1)
+    l = range(0, max_order + 1)
 
     for ll in l:
-        for lp in l:
-            jdict[ll, lp] = np.array([sp.jn(float(lp), i) for i in x[ll]])
+        jdict[ll] = np.array([sp.jn(float(ll), i) for i in x])
+        jdict[-ll] = (-1)**(ll) * jdict[ll]  # faster than using jv again
 
     return jdict
 
