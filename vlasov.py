@@ -125,6 +125,36 @@ class vlasovSolver():
         return lm.generateLMatrix(self.max_l, self.max_n)
 
     def generateInteractionMatrix(self, N):
+        '''
+        Uses the supplied particles per bunch N, and 
+        the base matrix to calculate an interaction matrix of the
+        kind in Chao's Equation 6.223; but not identical to that matrix.
+
+        To understand this method, note that
+        in Chao's Equation 6.223 the matrix elements are given by Eq. 6.222,
+        which assumes a broadband impedance, χ=0 and an airbag longitudinal
+        distribution; neglecting radial modes. This function makes none
+        of these assumptions but does follow the general form of
+        Equation 6.222 whereby the matrix elements are
+
+        M_{ll'nn'} = l * δ_{ll'} * δ_{nn'} + k * m_{ll'nn'}
+
+        where δ_{ll'} is a Kronecker delta, m_{ll'nn'} is a matrix which
+        contains all remaining l, l', n and n' dependence and
+        is here referred to as the 'base matrix' and k is a coefficient
+
+        k = -i N r_{0} c / (2 β γ ⍵_{β} ⍵_{s} T_{0}^2)
+
+        which is equivalent to the coefficient in Chao's Equation 6.222
+        although it is not identical for several reasons.
+
+        The final interaction matrix is formed by multiplying the
+        base matrix by k and adding the Kronecker delta terms; referred
+        to here as the l-matrix. This method allows vectorised methods
+        to be applied and means that solving for numerous values
+        of N can be done without having to recompute the base
+        matrix; only k changes.
+        '''
         assert self.base_matrix[0, 0] != 0.0, "generateBaseMatrix() must be run before generateInteractionMatrix()." 
 
         interactionMatrix = lm.generateInteractionMatrix(self.base_matrix,
