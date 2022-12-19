@@ -12,7 +12,7 @@ def generateSimpleBaseMatrix(max_l: int, zhat,
     Provided l*ws is neglected in the frequency sampling, the bessel functions
     and impedance are sampled at the same frequency for every matrix element.
     '''
-    fp = sampled_frequencies[0]
+    fp = sampled_frequencies
     wp = 2 * np.pi * fp
     w = wp - w_xi
 
@@ -52,7 +52,7 @@ def generateSimpleBaseMatrix(max_l: int, zhat,
     # The inner loop is then looping over columns and only needs to go to the
     # main diagonal. Values off the main diagonal are then reflected.
     for ii, i in enumerate(range(-max_l, 1)):
-        temp = sampled_impedance[0] * jdict[i]
+        temp = sampled_impedance * jdict[i]
         for jj, j in enumerate(range(-max_l, 1)):
             # # For checking value of l'
             # matrix[ii, jj] = j

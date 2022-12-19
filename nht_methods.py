@@ -8,7 +8,7 @@ def generateSimpleBaseMatrix(max_l: int, ring_radii,
                        sampled_frequencies: np.ndarray, sampled_impedance: np.ndarray,
                        f0:float, num_bunches:float, beta:float, w_b:float, w_xi:float) -> np.ndarray:
     num_rings = len(ring_radii)
-    fp = sampled_frequencies[0]
+    fp = sampled_frequencies
         
     wp = 2*np.pi*fp
     w = wp-w_xi
@@ -55,7 +55,7 @@ def generateSimpleBaseMatrix(max_l: int, ring_radii,
             for ii, i in enumerate(range(-max_l, 1)):  # rows, l
 
                 # Index the sampled impedance with 0*w_s in the frequency to make the 
-                temp = jdict[ring1][i] * sampled_impedance[0]
+                temp = jdict[ring1][i] * sampled_impedance
                 for jj, j in enumerate(range(-max_l, 1)):  # cols, l'
                     matrix[ring1*lenl + ii, ring2*lenl + jj] = 1/num_rings * np.sum(temp * jdict[ring2][j])
                     

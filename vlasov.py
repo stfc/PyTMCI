@@ -45,7 +45,7 @@ class vlasovSolver():
                                            (2 * max_l + 1) * (max_n + 1)),
                                     dtype=np.complex128)
 
-    def impedanceSampleFrequencies(self, max_harmonics, multi_bunch_mode):
+    def _impedanceSampleFrequencies(self, max_harmonics, multi_bunch_mode):
         '''
         Returns the quantities
         $$$
@@ -183,8 +183,10 @@ class airbag(vlasovSolver):
         super().__init__(accelerator, max_l, 0)
         self.zhat = zhat
 
-    def generateBaseMatrix(self, method, sample_frequencies, sampled_dipole_impedance):
+    def generateBaseMatrix(self, method, zperp, max_harmonics, multi_bunch_mode):
         if method == "perturbed-simple":
+            sample_frequencies = self._impedanceSampleFrequencies(max_harmonics, multi_bunch_mode)[0]
+            sampled_dipole_impedance = zperp(sample_frequencies)
             self.base_matrix = am.generateSimpleBaseMatrix(
                 self.max_l, self.zhat,
                 sample_frequencies, sampled_dipole_impedance,
@@ -193,6 +195,8 @@ class airbag(vlasovSolver):
                 self.accelerator.w_b, self.accelerator.w_xi)
 
         elif method == "perturbed-full":
+            sample_frequencies = self._impedanceSampleFrequencies(max_harmonics, multi_bunch_mode)
+            sampled_dipole_impedance = zperp(sample_frequencies)
             self.base_matrix = am.generateFullBaseMatrix(
                 self.max_l, self.zhat,
                 sample_frequencies, sampled_dipole_impedance,
@@ -217,12 +221,15 @@ class NHT(vlasovSolver):
                                                  search_limit)
         return self.ring_radii
 
-    def generateBaseMatrix(self, method, sample_frequencies, sampled_dipole_impedance):
+    def generateBaseMatrix(self, method, zperp, max_harmonics, multi_bunch_mode):
         if len(self.ring_radii) != self.num_rings:
             raise Exception("Calculate ring radii first.")
             return self.base_matrix
 
         if method == "perturbed-simple":
+            sample_frequencies = self._impedanceSampleFrequencies(max_harmonics, multi_bunch_mode)[0]
+            sampled_dipole_impedance = zperp(sample_frequencies)
+
             self.base_matrix = nht.generateSimpleBaseMatrix(
                 self.max_l, self.ring_radii,
                 sample_frequencies, sampled_dipole_impedance,
@@ -256,8 +263,7 @@ class arbitraryLongitudinal(vlasovSolver):
     def g0Hat(self, r):
         return lm.g0Hat(r, self.a, self.Gk)
 
-    def generateBaseMatrix(self, method,
-                           sample_frequencies, sampled_dipole_impedance):
+    def generateBaseMatrix(self, method, zperp, max_harmonics, multi_bunch_mode):
         if len(self.Gk) == 0:
             raise Exception("Unperturbed longitudinal distribution has not"
                             + "been fit. \n Run calculateGk() before"
@@ -265,6 +271,9 @@ class arbitraryLongitudinal(vlasovSolver):
             return self.base_matrix
 
         if method == "perturbed-simple":
+            sample_frequencies = self._impedanceSampleFrequencies(max_harmonics, multi_bunch_mode)[0]
+            sampled_dipole_impedance = zperp(sample_frequencies)
+
             self.base_matrix = lm.generateSimpleBaseMatrix(
                 self.max_l, self.max_n, self.a, self.Gk,
                 sample_frequencies, sampled_dipole_impedance,
