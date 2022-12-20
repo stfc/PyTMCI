@@ -145,8 +145,11 @@ def generateBesselJDict(max_order, x):
     etc
     '''
     jdict = np.zeros((2 * max_order + 1, len(x)))
+    jdict[0] = np.array([sp.j0(i) for i in x])
+    jdict[1] = np.array([sp.j1(i) for i in x])
+    jdict[-1] = -jdict[1]
 
-    l = range(0, max_order + 1)
+    l = range(2, max_order + 1)
 
     for ll in l:
         jdict[ll] = np.array([sp.jn(float(ll), i) for i in x])
