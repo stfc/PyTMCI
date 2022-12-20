@@ -120,8 +120,9 @@ def generateFullBaseMatrix(max_l: int, zhat,
     # Symmetry here is limited because l changes the sample frequencies.
     for ii, i in enumerate(l):
         temp = sampled_impedance[i] * jdict[i][i]
-        for jj, j in enumerate(l):
+        for jj, j in enumerate(range(-max_l, 1)):
             matrix[ii, jj] = 1j**(i - j) * np.sum(temp * jdict[i][j])
+            matrix[ii, -jj - 1] = matrix[ii, jj]
 
     return matrix
 
