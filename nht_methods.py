@@ -57,7 +57,7 @@ def generateSimpleBaseMatrix(max_l: int, ring_radii,
                 # Index the sampled impedance with 0*w_s in the frequency to make the 
                 temp = jdict[ring1][i] * sampled_impedance
                 for jj, j in enumerate(range(-max_l, 1)):  # cols, l'
-                    matrix[ring1*lenl + ii, ring2*lenl + jj] = 1/num_rings * np.sum(temp * jdict[ring2][j])
+                    matrix[ring1*lenl + ii, ring2*lenl + jj] = 1/num_rings * (1j)**(i - j) * np.sum(temp * jdict[ring2][j])
                     
                     matrix[ring1*lenl + lenl - ii -1, ring2*lenl + jj] = matrix[ring1*lenl + ii, ring2*lenl + jj]
                     matrix[ring1*lenl + ii, ring2*lenl + lenl - jj -1] = matrix[ring1*lenl + ii, ring2*lenl + jj]
