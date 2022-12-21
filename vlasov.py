@@ -95,21 +95,21 @@ class vlasovSolver():
         helper function to generate the frequencies.
 
         Possible methods are:
-        'perturbed-full' -   Assumes Ω ≈ ⍵_{β} + l * ⍵_{s} from Chao's
+        'perturbed-full' -   Assumes Ω ≈ ω_{β} + l * ω_{s} from Chao's
                              Equation 6.184. Assumes that deviation from
                              the wake-free or low intensity (N=0) case is
                              small. See Chao's equation for full description.
                              Available symmetry is limited, so this can be
                              resource intensive.
 
-        'perturbed-simple' - Assumes Ω ≈ ⍵_{β}, neglecting (l * ⍵_{s})
+        'perturbed-simple' - Assumes Ω ≈ ω_{β}, neglecting (l * ω_{s})
                              from Chao's Equation 6.184.
                              Makes same assumptions as perturbed-full, but
-                             is only reasonable provided ⍵_{β} >> ⍵_{s}, the
-                             impedance is smooth with a resolution of ⍵_{s}
+                             is only reasonable provided ω_{β} >> ω_{s}, the
+                             impedance is smooth with a resolution of ω_{s}
                              and l is not too large.
                              May not be a good assumption if the impedance
-                             has a resonance with width on the order of ⍵_{s}.
+                             has a resonance with width on the order of ω_{s}.
                              By making this assumption, all functions are
                              evaluated at the same frequencies, significantly
                              reducing computation time by exploiting symmetry.
@@ -158,7 +158,7 @@ class vlasovSolver():
         contains all remaining l, l', n and n' dependence and
         is here referred to as the 'base matrix' and k is a coefficient
 
-        k = -i N r_{0} c / (2 β γ ⍵_{β} ⍵_{s} T_{0}^2)
+        k = -i N r_{0} c / (2 β γ ω_{β} ω_{s} T_{0}^2)
 
         which is equivalent to the coefficient in Chao's Equation 6.222
         although it is not identical for several reasons.
@@ -244,6 +244,22 @@ class NHT(vlasovSolver):
         sampled_dipole_impedance = zperp(sample_frequencies)
 
         self.base_matrix = nht.generateSimpleBaseMatrix(
+            self.max_l, self.ring_radii,
+            sample_frequencies, sampled_dipole_impedance,
+            self.accelerator.f0, self.accelerator.num_bunches,
+            self.accelerator.beta,
+            self.accelerator.w_b, self.accelerator.w_xi)
+
+        return self.base_matrix
+
+    def _generateBaseMatrix_perturbedFull(self, zperp, max_harmonics, multi_bunch_mode):
+        if len(self.ring_radii) != self.num_rings:
+            raise Exception("Calculate ring radii first.")
+
+        sample_frequencies = self._impedanceSampleFrequencies(max_harmonics, multi_bunch_mode)
+        sampled_dipole_impedance = zperp(sample_frequencies)
+
+        self.base_matrix = nht.generateFullBaseMatrix(
             self.max_l, self.ring_radii,
             sample_frequencies, sampled_dipole_impedance,
             self.accelerator.f0, self.accelerator.num_bunches,

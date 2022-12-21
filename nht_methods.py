@@ -65,6 +65,44 @@ def generateSimpleBaseMatrix(max_l: int, ring_radii,
 
     return matrix
 
+def generateFullBaseMatrix(max_l: int, ring_radii,
+                           sampled_frequencies: np.ndarray, sampled_impedance: np.ndarray,
+                           f0: float, num_bunches: float, beta: float, w_b: float, w_xi: float) -> np.ndarray:
+    num_rings = len(ring_radii)
+    fp = sampled_frequencies
+    wp = 2 * np.pi * fp
+    w = wp - w_xi
+
+    # Make a list of all the values of l that will be calculated, this gets repeated a few times
+    l = np.arange(-int(max_l), int(max_l) + 1)
+
+    # Preliminarily work out all of the required bessel functions. This avoids
+    # calling them inside the nested loop since we only need to calculate J for
+    # each value of l.
+    # By looping over w, whose index is l this will come out with an index of l too
+    jdict = []
+    for i in w:
+        temp = []
+        for j in ring_radii:
+            temp.append(am.generateBesselJDict(max_l, i * j / beta / cn.c))
+
+        jdict.append(temp)
+
+    # Allocate memory for the matrix
+    matrix = np.zeros(shape=((2 * max_l + 1) * num_rings,
+                             (2 * max_l + 1) * num_rings), dtype=np.complex128)
+
+    # populate the matrix
+    lenl = len(l)
+    for ring1 in range(num_rings):  # rows, n
+        for ring2 in range(num_rings):  # cols, n'
+            for ii, i in enumerate(l):  # rows, l
+                temp = jdict[i][ring1][i] * sampled_impedance[i]
+                for jj, j in enumerate(l):  # cols, l'
+                    matrix[ring1 * lenl + ii, ring2 * lenl + jj] = 1 / num_rings * (1j)**(i - j) * np.sum(temp * jdict[i][ring2][j])
+
+    return matrix
+
 
 # ============== Compile Code Above
 # If the optional dependency numba is available then the code below
