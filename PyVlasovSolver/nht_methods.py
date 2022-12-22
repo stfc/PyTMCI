@@ -1,8 +1,8 @@
 import numpy as np                   # Linear algebra and mathematical functions
-import airbag_methods as am
 import scipy.constants as cn         # Physical constants
 import scipy.integrate as si         # Numerical integration methods (Romberg) 
 import scipy.optimize as so          # Root finding
+from . import airbag_methods as am
 
 def generateSimpleBaseMatrix(max_l: int, ring_radii,
                        sampled_frequencies: np.ndarray, sampled_impedance: np.ndarray,

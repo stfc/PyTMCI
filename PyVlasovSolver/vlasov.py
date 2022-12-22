@@ -1,9 +1,9 @@
 import numpy as np               # Linear algebra and mathematical functions
 import scipy.constants as cn     # Physical constants
 import matplotlib.pyplot as plt
-import laguerre_methods as lm
-import airbag_methods as am
-import nht_methods as nht
+from . import laguerre_methods as lm
+from . import airbag_methods as am
+from . import nht_methods as nht
 
 
 class accelerator:
