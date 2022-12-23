@@ -164,6 +164,7 @@ def generateBesselJDict1D(max_order, x):
 
     return jdict
 
+
 # ============== Compile Code Above
 # If the optional dependency numba is available then the code below
 # will automatically decorate all functions already defined with a
@@ -181,9 +182,3 @@ try:
 except ModuleNotFoundError:
     print("Using native Python methods for Airbag Methods.")
     print("Consider installing numba for compiled and parallelised methods.")
-
-
-if __name__ == '__main__':
-    a = generateBesselJDict(5, 3.0)
-
-    # b = generateBaseMatrix(10, 23e-2, np.array([-1, 0.1, 2]), np.array([-0.1+0.1j, 1+1j, 0.2+0.2j]), 1, 1, 0.5, 6.5, 0.2)
