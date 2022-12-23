@@ -26,7 +26,7 @@ def generateSimpleBaseMatrix(max_l: int, ring_radii,
     # was index 4.
     jdict = []
     for i in ring_radii:
-        jdict.append(am.generateBesselJDict(max_l, w*i/beta/cn.c))
+        jdict.append(am.generateBesselJDict1D(max_l, w*i/beta/cn.c))
 
     # Allocate memory for the matrix
     matrix = np.zeros(shape=((2*max_l+1)*num_rings,
@@ -84,7 +84,7 @@ def generateFullBaseMatrix(max_l: int, ring_radii,
     for i in w:
         temp = []
         for j in ring_radii:
-            temp.append(am.generateBesselJDict(max_l, i * j / beta / cn.c))
+            temp.append(am.generateBesselJDict1D(max_l, i * j / beta / cn.c))
 
         jdict.append(temp)
 
@@ -115,7 +115,6 @@ def generateFullBaseMatrix(max_l: int, ring_radii,
 try:
     from numba import jit_module
     jit_module(nopython=True,
-               cache=True,
                nogil=True, fastmath=True)
     print("Using Numba optimised NHT methods.")
 

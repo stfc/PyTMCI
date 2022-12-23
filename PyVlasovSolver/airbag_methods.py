@@ -27,7 +27,7 @@ def generateSimpleBaseMatrix(max_l: int, zhat,
     #
     # We index 0 here, so that we're sampling the frequency with 0 * w_s in the
     # sample frequency.
-    jdict = generateBesselJDict(max_l, w * zhat / beta / cn.c)
+    jdict = generateBesselJDict1D(max_l, w * zhat / beta / cn.c)
 
     # Allocate memory for the matrix
     matrix = np.zeros(shape=(2 * max_l + 1, 2 * max_l + 1),
@@ -103,12 +103,11 @@ def generateFullBaseMatrix(max_l: int, zhat,
     # Make a list of all values of l to be used, this gets repeated
     l = np.arange(-int(max_l), int(max_l) + 1)
 
-    # Preliminarily work out all of the required bessel functions. This avoids
-    # calling them inside the nested loop since we only need to calculate J for
-    # each value of l.
-    jdict = []
-    for i in w:
-        jdict.append(generateBesselJDict(max_l, i * zhat / beta / cn.c))
+    # Preliminarily work out all of the required bessel functions. Unlike
+    # with the perturbed-simple method, this doesn't actually save
+    # time, because sp.jn() has to be run for every value of l and l'.
+    # This was kept as-is so that the airbag and NHT solvers remain similar.
+    jdict = generateBesselJDict2D(max_l, w * zhat / beta / cn.c)
 
     # Allocate memory for the matrix
     matrix = np.zeros(shape=(2 * max_l + 1, 2 * max_l + 1),
@@ -127,7 +126,15 @@ def generateFullBaseMatrix(max_l: int, zhat,
     return matrix
 
 
-def generateBesselJDict(max_order, x):
+def generateBesselJDict2D(max_order, x):
+    jdict = []
+    for i in x:
+        jdict.append(generateBesselJDict1D(max_order, i))
+
+    return jdict
+
+
+def generateBesselJDict1D(max_order, x):
     '''
     n is an integer with the values
     -max_order, -max_order+1, -max_order+2, ..., 0, 1, 2, ..., max_order
@@ -168,7 +175,6 @@ def generateBesselJDict(max_order, x):
 try:
     from numba import jit_module
     jit_module(nopython=True,
-               cache=True,
                nogil=True, fastmath=True)
     print("Using Numba optimised Airbag methods.")
 
