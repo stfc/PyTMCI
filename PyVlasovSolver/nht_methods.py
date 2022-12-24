@@ -6,63 +6,63 @@ from . import airbag_methods as am
 
 
 def generateSimpleBaseMatrix(max_l: int, ring_radii,
-                       sampled_frequencies: np.ndarray, sampled_impedance: np.ndarray,
-                       f0:float, num_bunches:float, beta:float, w_b:float, w_xi:float) -> np.ndarray:
+                             sampled_frequencies: np.ndarray, sampled_impedance: np.ndarray,
+                             f0: float, num_bunches: float, beta: float, w_b: float, w_xi: float) -> np.ndarray:
     num_rings = len(ring_radii)
     fp = sampled_frequencies
-        
-    wp = 2*np.pi*fp
-    w = wp-w_xi
+
+    wp = 2 * np.pi * fp
+    w = wp - w_xi
 
     # Make a list of all the values of l that will be calculated, this gets repeated a few times
-    l = np.arange(-int(max_l), int(max_l)+1)
+    l = np.arange(-int(max_l), int(max_l) + 1)
 
     # Preliminarily work out all of the required bessel functions. This avoids
     # calling them inside the nested loop since we only need to calculate J for
-    # each value of l.
-    #
-    # By making this a dictionary rather than an array we can still use i and j
-    # (e.g. if we set matrixSize=6 i=(-3, -2, -1, 0, 1, 2, 3) etc)
-    # to index, whereas if we used an array we'd have to work out what that l=1 
-    # was index 4.
+    # each value of l'. The index of each base matrix is the value of
+    # l', the (Bessel function order).
     jdict = []
     for i in ring_radii:
-        jdict.append(am.generateBesselJDict1D(max_l, w*i/beta/cn.c))
+        jdict.append(am.generateBesselJDict1D(max_l, w * i / beta / cn.c))
 
     # Allocate memory for the matrix
-    matrix = np.zeros(shape=((2*max_l+1)*num_rings,
-                             (2*max_l+1)*num_rings), dtype=np.complex128)
-    
+    matrix = np.zeros(shape=((2 * max_l + 1) * num_rings,
+                             (2 * max_l + 1) * num_rings), dtype=np.complex128)
+
     # populate the matrix
-    # Note that since this is the sum j_i * j_j, that it doesn't matter the
-    # order of the orders(there is no difference between j_i*j_j and j_j*j_i).
-    # As such we only need an upper or a lower triangular matrix and then the
-    # result will be mirrored. For example if max_l=2, the order of the
-    # bessel function orders in the matrix elements are
-    # (-2,-2) (-2,-1) (-2,+0) (-2,+1) (-2,+2)
-    # (-1,-2) (-1,-1) (-1,+0) (-1,+1) (-1,+2)
-    # (+0,-2) (+0,-1) (+0,+0) (+0,+1) (+0,+2)
-    # (+1,-2) (+1,-1) (+1,+0) (+1,+1) (+1,+2)
-    # (+2,-2) (+2,-1) (+2,+0) (+2,+1) (+2,+2)
+    # If num_rings = 2, then max_n = 1, so that z_{n} has indices 0 or 1.
+    # If max_l=2, and num_rings=2 the values of (l, l') are
+    #                  n' = 0                                     n' = 1
+    #         (-2,-2) (-2,-1) (-2,+0) (-2,+1) (-2,+2)    (-2,-2) (-2,-1) (-2,+0) (-2,+1) (-2,+2)
+    #         (-1,-2) (-1,-1) (-1,+0) (-1,+1) (-1,+2)    (-1,-2) (-1,-1) (-1,+0) (-1,+1) (-1,+2)
+    # n = 0   (+0,-2) (+0,-1) (+0,+0) (+0,+1) (+0,+2)    (+0,-2) (+0,-1) (+0,+0) (+0,+1) (+0,+2)
+    #         (+1,-2) (+1,-1) (+1,+0) (+1,+1) (+1,+2)    (+1,-2) (+1,-1) (+1,+0) (+1,+1) (+1,+2)
+    #         (+2,-2) (+2,-1) (+2,+0) (+2,+1) (+2,+2)    (+2,-2) (+2,-1) (+2,+0) (+2,+1) (+2,+2)
     #
-    # If (-2,-1) = (-1,-2) then this matrix is reflected around the main diagonal.
+    #         (-2,-2) (-2,-1) (-2,+0) (-2,+1) (-2,+2)    (-2,-2) (-2,-1) (-2,+0) (-2,+1) (-2,+2)
+    #         (-1,-2) (-1,-1) (-1,+0) (-1,+1) (-1,+2)    (-1,-2) (-1,-1) (-1,+0) (-1,+1) (-1,+2)
+    # n = 1   (+0,-2) (+0,-1) (+0,+0) (+0,+1) (+0,+2)    (+0,-2) (+0,-1) (+0,+0) (+0,+1) (+0,+2)
+    #         (+1,-2) (+1,-1) (+1,+0) (+1,+1) (+1,+2)    (+1,-2) (+1,-1) (+1,+0) (+1,+1) (+1,+2)
+    #         (+2,-2) (+2,-1) (+2,+0) (+2,+1) (+2,+2)    (+2,-2) (+2,-1) (+2,+0) (+2,+1) (+2,+2)
     #
-    # The top loop is looping over rows and we evaluate all values of l for rows.
-    # The inner loop is then looping over columns and only needs to go to the
-    # main diagonal. Values off the main diagonal are then reflected.
+    # The top loop is looping over the submatrix rows. (values of n)
+    # The second loop is looping over the submatrix columns. (values of n')
+    # The third loop is looping over rows within a submatrix. (values of l)
+    # The fourth loop is looping over columns within a submatrix. (values of l')
     lenl = len(l)
     for ring1 in range(num_rings):  # rows, n
         for ring2 in range(num_rings):  # cols, n'
             for ii, i in enumerate(range(-max_l, 1)):  # rows, l
-
-                # Index the sampled impedance with 0*w_s in the frequency to make the 
                 temp = jdict[ring1][i] * sampled_impedance
                 for jj, j in enumerate(range(-max_l, 1)):  # cols, l'
-                    matrix[ring1*lenl + ii, ring2*lenl + jj] = 1/num_rings * (1j)**(i - j) * np.sum(temp * jdict[ring2][j])
-                    
-                    matrix[ring1*lenl + lenl - ii -1, ring2*lenl + jj] = matrix[ring1*lenl + ii, ring2*lenl + jj]
-                    matrix[ring1*lenl + ii, ring2*lenl + lenl - jj -1] = matrix[ring1*lenl + ii, ring2*lenl + jj]
-                    matrix[ring1*lenl + lenl - ii -1, ring2*lenl + lenl - jj -1] = matrix[ring1*lenl + ii, ring2*lenl + jj]
+                    matrix[ring1 * lenl + ii, ring2 * lenl + jj] = 1 / num_rings * (1j)**(i - j) * np.sum(temp * jdict[ring2][j])
+
+                    # The next three lines are exploiting symmetry. To turn
+                    # this off, comment out the next three lines and change
+                    # both loops over range(-max_l, 1) to l.
+                    matrix[ring1 * lenl + lenl - ii - 1, ring2 * lenl + jj] = matrix[ring1 * lenl + ii, ring2 * lenl + jj]
+                    matrix[ring1 * lenl + ii, ring2 * lenl + lenl - jj - 1] = matrix[ring1 * lenl + ii, ring2 * lenl + jj]
+                    matrix[ring1 * lenl + lenl - ii - 1, ring2 * lenl + lenl - jj - 1] = matrix[ring1 * lenl + ii, ring2 * lenl + jj]
 
     return matrix
 

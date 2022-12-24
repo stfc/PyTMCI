@@ -82,37 +82,29 @@ class vlasovSolver():
 
     def generateBaseMatrix(self, method, zperp, max_harmonics, multi_bunch_mode):
         '''
-        Generate the base interaction matrix given the impedance sample
-        frequencies and an array of transverse dipole impedances sampled at
-        these frequencies.
+        Generate the base interaction matrix given a method string, a
+        function defining the transverse impedance Z_{1}(f), a number of
+        harmonics to include and a multi-bunch mode.
 
-        The method parameter specifies what assumptions are made when
+        The method string specifies what assumptions are made when
         producing the base matrix, which can reduce computational time
         with no impact on results if used properly, or give totally inaccurate
-        results if used improperly.
+        results if used improperly. Possible methods are:
 
-        For all methods that are 'perturbed-*', use impedanceSampleFrequencies
-        helper function to generate the frequencies.
-
-        Possible methods are:
-        'perturbed-full' -   Assumes Ω ≈ ω_{β} + l * ω_{s} from Chao's
-                             Equation 6.184. Assumes that deviation from
-                             the wake-free or low intensity (N=0) case is
-                             small. See Chao's equation for full description.
-                             Available symmetry is limited, so this can be
-                             resource intensive.
+        'perturbed-full' -  Assumes Ω ≈ ω_{β} + l * ω_{s} from Chao's
+        Equation 6.184. Assumes that deviation from the wake-free or low
+        intensity (N=0) case is small. See Chao's equation for full
+        description. Available symmetry is limited, so this can be
+        resource intensive.
 
         'perturbed-simple' - Assumes Ω ≈ ω_{β}, neglecting (l * ω_{s})
-                             from Chao's Equation 6.184.
-                             Makes same assumptions as perturbed-full, but
-                             is only reasonable provided ω_{β} >> ω_{s}, the
-                             impedance is smooth with a resolution of ω_{s}
-                             and l is not too large.
-                             May not be a good assumption if the impedance
-                             has a resonance with width on the order of ω_{s}.
-                             By making this assumption, all functions are
-                             evaluated at the same frequencies, significantly
-                             reducing computation time by exploiting symmetry.
+        from Chao's Equation 6.184 as well as the same assumptions as
+        perturbed-full. Only reasonable provided ω_{β} >> ω_{s}, the
+        impedance is smooth with a resolution of ω_{s} and l is not too large.
+        May not be a good assumption if the impedance has a resonance with
+        width on the order of ω_{s}. By making this assumption, all functions
+        are evaluated at the same frequencies, significantly reducing
+        computation time by exploiting symmetry.
 
         '''
         if method == "perturbed-simple":
