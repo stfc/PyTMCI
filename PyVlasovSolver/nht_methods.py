@@ -66,6 +66,7 @@ def generateSimpleBaseMatrix(max_l: int, ring_radii,
 
     return matrix
 
+
 def generateFullBaseMatrix(max_l: int, ring_radii,
                            sampled_frequencies: np.ndarray, sampled_impedance: np.ndarray,
                            f0: float, num_bunches: float, beta: float, w_b: float, w_xi: float) -> np.ndarray:
@@ -99,8 +100,12 @@ def generateFullBaseMatrix(max_l: int, ring_radii,
         for ring2 in range(num_rings):  # cols, n'
             for ii, i in enumerate(l):  # rows, l
                 temp = jdict[i][ring1][i] * sampled_impedance[i]
-                for jj, j in enumerate(l):  # cols, l'
+                for jj, j in enumerate(range(-max_l, 1)):  # cols, l'
                     matrix[ring1 * lenl + ii, ring2 * lenl + jj] = 1 / num_rings * (1j)**(i - j) * np.sum(temp * jdict[i][ring2][j])
+
+                    # The next line is to exploit symmetry. To stop using this symmetry, comment
+                    # out the next line and change enumerate(range(-max_l, 1)) to enumerate(l)
+                    matrix[ring1 * lenl + ii, (ring2 + 1) * lenl - jj - 1] = matrix[ring1 * lenl + ii, ring2 * lenl + jj]
 
     return matrix
 
