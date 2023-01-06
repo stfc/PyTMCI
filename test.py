@@ -3,6 +3,7 @@ import numpy as np
 import scipy.constants as cn
 import PyVlasovSolver as vs
 from PyVlasovSolver import airbag_methods as am
+from PyVlasovSolver import laguerre_methods as lm
 
 
 class TestGeneral(unittest.TestCase):
@@ -433,5 +434,72 @@ class TestNHT(unittest.TestCase):
                             self.assertIsNone(np.testing.assert_array_almost_equal(base_matrix, my_base_matrix))
 
 
+class testArbitrary(unittest.TestCase):
+    def test_factorial(self):
+        # Just checking the first 50 values.
+        # The following array was computed with mpmath
+        # then converted to an integer [int(mp.factorial(i)) for i in range(50)]
+        res = np.array([1, 1, 2, 6, 24, 120, 720, 5040, 40320, 362880, 3628800,
+                        39916800, 479001600, 6227020800, 87178291200, 1307674368000,
+                        20922789888000, 355687428096000, 6402373705728000,
+                        121645100408832000, 2432902008176640000, 51090942171709440000,
+                        1124000727777607680000, 25852016738884978212864,
+                        620448401733239409999872, 15511210043330986055303168,
+                        403291461126605650322784256, 10888869450418351940239884288,
+                        304888344611713871918902804480, 8841761993739701898620088352768,
+                        265252859812191068217601719009280,
+                        8222838654177922430198509928972288,
+                        263130836933693517766352317727113216,
+                        8683317618811885938715673895318323200,
+                        295232799039604157334081533963162091520,
+                        10333147966386145431134989962796349784064,
+                        371993326789901254863672752494735387525120,
+                        13763753091226345578872114833606270345281536,
+                        523022617466601117141859892252474974331207680,
+                        20397882081197444123129673397696887153724751872,
+                        815915283247897683795548521301193790359984930816,
+                        33452526613163807956284472299189486453163567349760,
+                        1405006117752879954933135270705268945154855145570304,
+                        60415263063373834074440829285578945930237590418489344,
+                        2658271574788448869416579949034705352617757694297636864,
+                        119622220865480188574992723157469373503186265858579103744,
+                        5502622159812089153567237889924947737578015493424280502272,
+                        258623241511168177673491006652997026552325199826237836492800,
+                        12413915592536072528327568319343857274511609591659416151654400,
+                        608281864034267522488601608116731623168777542102418391010639872],
+                       dtype=object)
+        result = lm.factorial(np.arange(50))
+        self.assertIsNone(np.testing.assert_array_almost_equal(res, result))
+
+    def test_rising_fact(self):
+        '''
+        Test rising factorial by percentage error. (threshold 0.005%)
+        '''
+        import mpmath as mp
+
+        for x in range(-41, 42):
+            for n in np.arange(0, 11):
+                res = float(mp.rf(x, n))
+                result = lm.rising_fact(x, n)
+
+                # We test with fractional difference because the very large numbers
+                # out of the rising factorial make comparing decimal places
+                # unnecessary (6 dp on a number with 10^(40) is ~46 SF).
+                # But rising_factorial can return 0, and calculating the
+                # fractional difference from 0 is impossible. In that case check
+                # decimal places.
+                msg = f"(x, n) = ({x:.1e}, {n:.1e}), {res:.2e}, {result:.2e}"
+
+                if abs(res) > 0.0:
+                    fractional_difference = np.abs((res - result) / res) * 100
+
+                    with self.subTest(msg):
+                        self.assertLess(fractional_difference, 0.05)
+
+                else:
+                    with self.subTest(msg):
+                        self.assertIsNone(np.testing.assert_array_almost_equal(res, result))
+
+    
 if __name__ == '__main__':
     unittest.main()

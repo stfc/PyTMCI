@@ -7,7 +7,7 @@ import scipy.integrate as si        # Numerical integration methods (Romberg)
 # ====== General Maths Functions
 
 factorial_lookup = np.array([
-    np.math.factorial(i) for i in range(150)
+    np.math.factorial(i) for i in range(50)
 ], dtype=np.float64)
 
 
@@ -24,7 +24,13 @@ def rising_fact(z: complex, n: int) -> complex:
     This notation is referred to as Pochammer's Symbol, see
     Abramowitz & Stegun, 6.1.22
     '''
+
+    # If compiled with numba and z specified as an integer, then the
+    # integer representation can overflow; although pure python would not.
+    # To overcome this, total could be specified as a float so that larger
+    # numbers can be represented. See tests for verified range of inputs.
     total = 1
+
     for k in range(n):
         total *= (z + k)
 

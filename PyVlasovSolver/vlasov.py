@@ -162,7 +162,7 @@ class vlasovSolver():
         of N can be done without having to recompute the base
         matrix; only k changes.
         '''
-        assert self.base_matrix[0, 0] != 0.0, "generateBaseMatrix() must be run before generateInteractionMatrix()." 
+        assert self.base_matrix[0, 0] != 0.0, "generateBaseMatrix() must be run before generateInteractionMatrix()."
 
         interactionMatrix = lm.generateInteractionMatrix(self.base_matrix,
                                                          self.l_matrix,
@@ -265,11 +265,22 @@ class arbitraryLongitudinal(vlasovSolver):
     def __init__(self, accelerator, max_l, max_n, *args, **kwargs):
         super().__init__(accelerator, max_l, max_n)
 
+        if max_l > 20:
+            raise ValueError("max_l > 20 has not been tested. Floating point "
+                             + "errors expected in Laguerre polynomial evaluation.")
+        if max_n > 10:
+            raise ValueError("max_n > 10 has not been tested. Floating point "
+                             + "errors expected in Laguerre polynomial evaluation.")
+
         self.a = 0
         self.Gk = np.array([])
 
     def calculateGk(self, g0hat, a, terms, max_radius=1,
                     numerical_normalise=False, *args, **kwargs):
+
+        if terms > 10:
+            raise ValueError("max terms > 10 has not been tested.")
+
         Gk = np.zeros(terms, dtype=np.float64)
         for k in range(terms):
             Gk[k] = lm.calculateGk(g0hat, a, k, **kwargs)
