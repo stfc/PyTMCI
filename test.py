@@ -478,7 +478,7 @@ class testArbitrary(unittest.TestCase):
         import mpmath as mp
 
         for x in range(-41, 42):
-            for n in np.arange(0, 11):
+            for n in np.arange(0, 12):
                 res = float(mp.rf(x, n))
                 result = lm.rising_fact(x, n)
 
@@ -494,7 +494,7 @@ class testArbitrary(unittest.TestCase):
                     fractional_difference = np.abs((res - result) / res) * 100
 
                     with self.subTest(msg):
-                        self.assertLess(fractional_difference, 0.05)
+                        self.assertLess(fractional_difference, 0.005)
 
                 else:
                     with self.subTest(msg):
