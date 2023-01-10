@@ -37,7 +37,7 @@ def rising_fact(z: complex, n: int) -> complex:
     return total
 
 
-def Lna(n:int, alpha:float, z:complex) -> complex:
+def Lna(n: int, alpha: float, z: complex) -> complex:
     '''
     Computes the generalised Laguerre polynomial, L_{n}^{(\alpha)}(z),
     with the condition that n, a are real, and z is in general complex.
@@ -47,10 +47,32 @@ def Lna(n:int, alpha:float, z:complex) -> complex:
     This definition comes from https://doi.org/10.4134/CKMS.c200208
     Specifically equation 15, with p=1, as specified after Equation 6.
     '''
+
+    # An alternative implementation seems to work better for large n and alpha,
+    # but is slower. It can be made to be fast using lru_cache, but I haven't
+    # gotten this to work with numba.
+    # def Lna(n:int, m:float, x:complex) -> complex:
+    #     '''
+    #     Computes the generalised Laguerre polynomial, L_{n}^{(\alpha)}(z),
+    #     with a recurrence relation.
+    #     '''
+
+    #     if n == 0:
+    #         return np.ones(len(x))
+    #     elif n == 1:
+    #         return 1 + m - x
+    #     else:
+    #         return ( (2*(n-1) + 1 + m - x) * Lna(n-1, m, x) - ( (n-1) + m) * Lna(n-2, m, x) )/n
+
     total = np.zeros(len(z), dtype=np.float64)
+    mult = np.ones(len(z), dtype=np.float64)
+    sign = +1
+
     for k in range(n + 1):
-        total += ((-1)**k / factorial(k) / factorial(n - k)
-                  * rising_fact(k + alpha + 1, n - k) * z**k)
+        total += (sign / factorial(k) / factorial(n - k)
+                  * rising_fact(k + alpha + 1, n - k) * mult)
+        mult = mult * z
+        sign = -sign
 
     return total
 
