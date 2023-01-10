@@ -196,7 +196,7 @@ def Qln(w: float, a: float, l: int, n: int, beta: float) -> float:
             * np.exp(-1 / 4 / a * w**2 / beta**2 / cn.c**2))
 
 
-def generateQlnDict(w: float, a:float, max_l:int, max_n:int, beta:float) -> float:
+def generateQlnDict(w: float, a: float, max_l: int, max_n: int, beta: float) -> float:
     '''
     w = (w' - w_{xi})
     a = constant used in Laguerre series expansion of unperturbed distribution
@@ -279,7 +279,7 @@ def calculateg1Point(a, eigenvectors, r, phi, max_l, max_n,
     # 5 , 2
     # 6 , 3
     # 7 , -3
-    # 
+    #
     # The end limit is then just n*(2*max_l+1) + 2*max_l+1 = 2*(max_l+1)*(n+1)
     # To verify this, a quick bit of code is
     # test_max_l = 3
@@ -288,12 +288,12 @@ def calculateg1Point(a, eigenvectors, r, phi, max_l, max_n,
     #     for l in test[n*(2*test_max_l+1):(2*test_max_l+1)*(n+1)]:
     #         print(f'{n}{l}')
     total = np.zeros(1, dtype=np.complex128)
-    for n in range(0, max_n+1):
-        for l, alpha_ln in zip(l_list, eigenvectors[n*(2*max_l+1):(2*max_l+1)*(n+1)]):
-            total += a**np.abs(l) * r**np.abs(l) * ar2 * np.exp(1j*l*phi) * alpha_ln * Lna(n, np.abs(l), np.array([a*r**2]))
-    
+    for n in range(0, max_n + 1):
+        for l, alpha_ln in zip(l_list, eigenvectors[n * (2 * max_l + 1):(2 * max_l + 1) * (n + 1)]):
+            total += a**np.abs(l) * r**np.abs(l) * ar2 * np.exp(1j * l * phi) * alpha_ln * Lna(n, np.abs(l), np.array([a * r**2]))
+
     # Need z to include the head-tail phase factor
-    z = r*np.cos(phi)
+    z = r * np.cos(phi)
     return total * np.exp(1j * chromaticity * w_b * z / eta / beta / cn.c)
 
 
@@ -305,28 +305,27 @@ def g1(grid_size, a, eigenvectors, max_r, max_l, max_n, beta, chromaticity, w_b,
 
     for n, i in enumerate(zz):
         for m, j in enumerate(dd):
-            phi = np.mod(np.arctan2(j, i) + 2*np.pi, 2*np.pi)  # to get 0 - 2pi
+            phi = np.mod(np.arctan2(j, i) + 2 * np.pi, 2 * np.pi)  # to get 0 - 2pi
             r = np.sqrt(i**2 + j**2)
             mat[-m, n] = calculateg1Point(a, eigenvectors, r, phi, max_l, max_n, beta, chromaticity, w_b, eta)[0]
-    
-    return mat
 
+    return mat
 
 
 # =========== Helper Functions                  ===========
 
-def generateFactCoefficient(max_l:int, max_n:int) -> float:
+def generateFactCoefficient(max_l: int, max_n: int) -> float:
     '''
     This function is for calculating the coefficient
     n! / Gamma(|l| + n + 1) for every value of n to avoid
     having to recalculate it for every element.
-    
+
     Since |l| and n are integers it is possible to calculate
     this as
     n! / (|l| + n)!
     and the np.math.factorial functions are faster than using
     the Gamma function.
-    
+
     I haven't experienced overflow errors from these functions
     but note that if they occur then this is an ideal situation for
     the gammaln() function which calculates the log of the gamma
@@ -337,28 +336,27 @@ def generateFactCoefficient(max_l:int, max_n:int) -> float:
     '''
 
     gamma_coef = {}
-    nfact = factorial(np.arange(int(max_n)+1))
-    for l in range(max_l+1):        
+    nfact = factorial(np.arange(int(max_n) + 1))
+    for l in range(max_l + 1):
         # Since n has indexes 0 - n, the key of a list is the index of n
-        n_array = nfact / factorial(np.arange(l, l+max_n+1))
-        
+        n_array = nfact / factorial(np.arange(l, l + max_n + 1))
+
         gamma_coef[l] = n_array
-    
+
     return gamma_coef
 
 # =========== Functions for Generating Matrices ===========
 
 
 def generateLMatrix(max_l, max_n):
-    matrix = np.zeros(((2*max_l+1)*(max_n+1), (2*max_l+1)*(max_n+1)), np.complex128)
-    np.fill_diagonal(matrix, [i for i in range(-max_l, max_l+1)]*(max_n+1))
+    matrix = np.zeros(((2 * max_l + 1) * (max_n + 1), (2 * max_l + 1) * (max_n + 1)), np.complex128)
+    np.fill_diagonal(matrix, [i for i in range(-max_l, max_l + 1)] * (max_n + 1))
     return matrix
 
 
-def generateSimpleBaseMatrix(max_l:int, max_n:int, a:float, Gk:np.ndarray,
-                       sample_frequencies, sampled_impedance:np.ndarray,
-                        f0:float, num_bunches:float, beta:float, w_b:float, w_xi:float) -> np.ndarray:
-
+def generateSimpleBaseMatrix(max_l: int, max_n: int, a: float, Gk: np.ndarray,
+                             sample_frequencies: np.ndarray, sampled_impedance: np.ndarray,
+                             f0: float, num_bunches: float, beta: float, w_b: float, w_xi: float) -> np.ndarray:
     '''
     max_l = max number of azimuthal modes
     max_n = max number of radial modes
@@ -375,7 +373,6 @@ def generateSimpleBaseMatrix(max_l:int, max_n:int, a:float, Gk:np.ndarray,
     fp = sample_frequencies
     wp = 2 * np.pi * fp
     w = wp - w_xi
-    
 
     # Make a list of all the values of l that will be calculated, this gets repeated a few times
     l = np.arange(-int(max_l), int(max_l) + 1)
@@ -411,35 +408,35 @@ def generateSimpleBaseMatrix(max_l:int, max_n:int, a:float, Gk:np.ndarray,
     #
     lenl = len(l)
     temp = np.zeros(len(fp), dtype=np.complex128)
-    for nn in range(max_n+1):  # rows, n
-        for nnp in range(max_n+1):  # cols, n'
+    for nn in range(max_n + 1):  # rows, n
+        for nnp in range(max_n + 1):  # cols, n'
             for ii, i in enumerate(range(-max_l, 1)):  # rows, l
                 temp = Gksums[i][nn] * sampled_impedance  # calculate this outside the next loop for speed
                 for jj, j in enumerate(range(-max_l, 1)):  # cols, l'
-                        matrix[nn*lenl + ii, nnp*lenl + jj] = (1j)**(i-j)*gamma_coef[np.abs(i)][nn]*np.sum(Qln_vals[j][nnp] * temp)
+                    matrix[nn * lenl + ii, nnp * lenl + jj] = (1j)**(i - j) * gamma_coef[np.abs(i)][nn] * np.sum(Qln_vals[j][nnp] * temp)
 
-                        # The next three lines are utilising symmetry between (l, -l) and (l', -l')
-                        #
-                        # The factor i^{l - l'} has to be updated for the sign of l. 
-                        # i^{l - l'} = (-1)^{l} * i^{-l - l'}
-                        # i^{l - -l'} = (-1)^{l'} * i^{l - +l'}
-                        # i^{l - l'} = (-1)^{l + l'} * i^{-l - -l'}
-                        #
-                        # The quantities Q_{l' n'} has to be updated for the new sign of l'
-                        # If we stick with only the negative signs of l', then Q_{l',n} = (-1)^{l'} Q_{-l', n}
-                        # If -l' -> l' then there is a new factor if (-1)^{l'} * (-1)^{-l} = 1
-                        # 
-                        # The quantities I_{lnk} have to be updated for the new value of l
-                        # If we stick with only the negative signs of l, then I_{l,n,k} = (-1)^{l} I_{-l, n, k}
-                        # If -l -> l, then this has a new factor of (-1)^l * (-1)^l = (-1)^(2l) = 1
-                        #
-                        # In all cases the sign is ultimately unchanged, so these matrix elements are the same.
-                        #
-                        # To stop utilising this symmetry, comment out the next three lines and replace
-                        # the (ii, i) and (jj, j) loops to loop over enumerate(l) rather than enumerate(range(-max_l, 1))
-                        matrix[nn*lenl + (2*max_l+1) - ii -1, nnp*lenl + jj] = matrix[nn*lenl + ii, nnp*lenl + jj]
-                        matrix[nn*lenl + (2*max_l+1) - ii -1, nnp*lenl + (2*max_l+1) - jj -1] = matrix[nn*lenl + ii, nnp*lenl + jj]
-                        matrix[nn*lenl + ii, nnp*lenl + (2*max_l+1) - jj -1] = matrix[nn*lenl + ii, nnp*lenl + jj]
+                    # The next three lines are utilising symmetry between (l, -l) and (l', -l')
+                    #
+                    # The factor i^{l - l'} has to be updated for the sign of l.
+                    # i^{l - l'} = (-1)^{l} * i^{-l - l'}
+                    # i^{l - -l'} = (-1)^{l'} * i^{l - +l'}
+                    # i^{l - l'} = (-1)^{l + l'} * i^{-l - -l'}
+                    #
+                    # The quantities Q_{l' n'} has to be updated for the new sign of l'
+                    # If we stick with only the negative signs of l', then Q_{l',n} = (-1)^{l'} Q_{-l', n}
+                    # If -l' -> l' then there is a new factor if (-1)^{l'} * (-1)^{-l} = 1
+                    #
+                    # The quantities I_{lnk} have to be updated for the new value of l
+                    # If we stick with only the negative signs of l, then I_{l,n,k} = (-1)^{l} I_{-l, n, k}
+                    # If -l -> l, then this has a new factor of (-1)^l * (-1)^l = (-1)^(2l) = 1
+                    #
+                    # In all cases the sign is ultimately unchanged, so these matrix elements are the same.
+                    #
+                    # To stop utilising this symmetry, comment out the next three lines and replace
+                    # the (ii, i) and (jj, j) loops to loop over enumerate(l) rather than enumerate(range(-max_l, 1))
+                    matrix[nn * lenl + (2 * max_l + 1) - ii - 1, nnp * lenl + jj] = matrix[nn * lenl + ii, nnp * lenl + jj]
+                    matrix[nn * lenl + (2 * max_l + 1) - ii - 1, nnp * lenl + (2 * max_l + 1) - jj - 1] = matrix[nn * lenl + ii, nnp * lenl + jj]
+                    matrix[nn * lenl + ii, nnp * lenl + (2 * max_l + 1) - jj - 1] = matrix[nn * lenl + ii, nnp * lenl + jj]
 
     return matrix
 
@@ -449,26 +446,25 @@ def generateInteractionMatrix(base_matrix, l_matrix, protons_per_bunch, num_bunc
     base_matrix = a matrix whose elements are given by
                          M[i, j] = SUM(J_i(w') * J_j(w') * Z_(perp)(w'))
                          where the sum is over harmonics.
-    '''    
-    gamma = 1/np.sqrt(1-beta**2)
+    '''
+    gamma = 1 / np.sqrt(1 - beta**2)
     r0 = cn.e**2 / mass / cn.c**2
 
-    # The elements in zperp_j_sum_matrix correspond to the summation terms which 
-    # are in every element. They are missing a coefficient, which depends on the 
+    # The elements in zperp_j_sum_matrix correspond to the summation terms which
+    # are in every element. They are missing a coefficient, which depends on the
     # number of particles per bunch. This coefficient is the same for all elements,
     # so multiply the whole matrix by it.
-    kl_coef = -1j * protons_per_bunch * r0 * cn.c * f0**2 / (2*gamma*w_b*w_s*beta) * num_bunches
+    kl_coef = -1j * protons_per_bunch * r0 * cn.c * f0**2 / (2 * gamma * w_b * w_s * beta) * num_bunches
     matrix = kl_coef * base_matrix
-    
+
     # There is an additional term in the matrix l * delta_{l l'} * delta_{n n'}.
     # These terms appear along the main diagonal, and do not have the same coefficient
     # as the other term in the matrix. Generate a diagonal matrix with the values of
-    # l, repeating for each n. Add this on. 
+    # l, repeating for each n. Add this on.
     matrix = matrix + l_matrix
-    
+
     # The matrix has now been entirely generated.
     return matrix
-
 
 
 # ============== Compile Code Above
@@ -492,53 +488,53 @@ except ModuleNotFoundError:
 
 
 # ================= Uncompiled Functions below ========================
-# For numba to compile functions it restricts what numpy functions 
+# For numba to compile functions it restricts what numpy functions
 # are used. In situations where functions are only used once and
 # aren't very demanding, there isn't much to gain by rewriting code
-# to use the limits selection of numpy functions. Such functions 
+# to use the limits selection of numpy functions. Such functions
 # are placed below this line.
 
 
-# =========== Numerical Methods 
+# =========== Numerical Methods
 # Functions for numerically integrating functions
 # These are used to ensure the proper normalisation numerically.
 
 def midpoint(func, a, b, n):
     '''
     Computes the midpoint Riemann sum of the function func between the
-    limits a and b. Spacing between samples is h = 1/2**n. 
+    limits a and b. Spacing between samples is h = 1/2**n.
     '''
     total = 0
     tttpon = 2**n
-    for i in range(int(2**(n-1))):
-        total += func((2*i+1)*(a+b)/tttpon)
-    
-    return (b-a)/2**(n-1) * total
+    for i in range(int(2**(n - 1))):
+        total += func((2 * i + 1) * (a + b) / tttpon)
+
+    return (b - a) / 2**(n - 1) * total
 
 
 def midpointrichardson(func, a, b, divmax=10, tol=1.0e-8, show=False):
     '''
     Performs Richardson extrapolation on the midpoint Riemann integral of
-    the function func between the limits a and b. 
+    the function func between the limits a and b.
     '''
     R = np.zeros((divmax, divmax))
     for i in range(divmax):
-        R[i, 0] = midpoint(func, a, b, i+1)
-        
-        for j in range(1, i+1):
-            R[i, j] = R[i, j-1] + 1/(4**(j)-1) * (R[i, j-1] - R[i-1, j-1])
-        
+        R[i, 0] = midpoint(func, a, b, i + 1)
+
+        for j in range(1, i + 1):
+            R[i, j] = R[i, j - 1] + 1 / (4**(j) - 1) * (R[i, j - 1] - R[i - 1, j - 1])
+
         if i > 1:
             # No need to do further calculations if we've already converged
-            if abs(R[i, i] - R[i-1][i-1]) < tol:
+            if abs(R[i, i] - R[i - 1][i - 1]) < tol:
                 break
-            
+
     if abs(R[-1][-1] - R[-2][-2]) > tol:
         print("WARNING: Did not converge to required tolerance")
-    
-    if show == True:
+
+    if show is True:
         print(R)
-        
+
     return R[i][i]
 
 
@@ -550,32 +546,32 @@ def normalisation_coefficient(func, split_position):
     distribution. For example with a gaussian it might be set to
     1*sigma; although the exact value should not affect the result.
     '''
-    i1 = si.romberg(lambda x: x*func(x), 0, split_position)
-    i2 = midpointrichardson(lambda t: 1/t**3*func(1/t), 0, 1/split_position)
-    normalisation_coefficient = 1/(i1 + i2)
-    
+    i1 = si.romberg(lambda x: x * func(x), 0, split_position)
+    i2 = midpointrichardson(lambda t: 1 / t**3 * func(1 / t), 0, 1 / split_position)
+    normalisation_coefficient = 1 / (i1 + i2)
+
     return normalisation_coefficient
 
 
 def normalise(func, normalisation_coefficient):
     '''
     This function redefines an input function, func, by multiplying it
-    by the supplied normalisation coefficient. 
+    by the supplied normalisation coefficient.
     '''
     def normalised_func(r):
         return normalisation_coefficient * func(r)
-    
+
     return normalised_func
 
-# =========== Unperturbed Distribution
 
+# =========== Unperturbed Distribution
 def calculateGk(g0hat, a, k, method='midpoint', max_radius=1):
     '''
-    Calculate G_k by performing the integral 
+    Calculate G_k by performing the integral
     G_k = \int_0^\infty ĝ_0(r) L_k^{(0)}(ar^2) d(ar^2)
-    
+
     max_radius is only significant for trapz and midpoint methods.
-    
+
     A few methods are provided but all of them should do the same thing.
 
     Midpoint       - Divides the integral into two. Uses standard romberg integration
@@ -587,28 +583,27 @@ def calculateGk(g0hat, a, k, method='midpoint', max_radius=1):
                      calculating the integral of that. This is faster, but not
                      necessarily the most accurate, especially for discontinuous
                      functions.
-                     
+
     trapz          - This is the most basic method. It generates an array of 5000
                      points between 0 and max_radius and uses the trapezium rule.
                      max_radius is important with this method. If it is too small
                      then the region beyond it won't be included in the integral.
                      If it is too large the steps between samples will be too wide.
-                     
+
     '''
     if method.lower() == 'laguerre-gauss':
         # Note that since g0hat does not necessarily have the required weight
         # function, the inverse of the weight function np.exp(x) is explicitly
-        # multiplied by g0hat. 
+        # multiplied by g0hat.
         g, w = np.polynomial.laguerre.laggauss(100)
-        return np.sum(w * np.exp(g) * g0hat(np.sqrt(g/a))*Lna(k, 0, g))
+        return np.sum(w * np.exp(g) * g0hat(np.sqrt(g / a)) * Lna(k, 0, g))
 
     elif method.lower() == 'midpoint':
-        Gkint_1 = si.romberg(lambda u: g0hat(np.sqrt(u/a))*Lna(k, 0, np.array([u])), 0, max_radius/10, divmax=15)[0]
-        Gkint_2 = midpointrichardson(lambda t: 1/t**2 * g0hat(np.sqrt(1/t/a)) * Lna(k, 0, np.array([1/t])), 0, 10/max_radius, divmax=15)
+        Gkint_1 = si.romberg(lambda u: g0hat(np.sqrt(u / a)) * Lna(k, 0, np.array([u])), 0, max_radius / 10, divmax=15)[0]
+        Gkint_2 = midpointrichardson(lambda t: 1 / t**2 * g0hat(np.sqrt(1 / t / a)) * Lna(k, 0, np.array([1 / t])), 0, 10 / max_radius, divmax=15)
         return Gkint_1 + Gkint_2
-    
+
     elif method.lower() == 'trapz':
         u = np.linspace(0, max_radius**2 * a, 5000)
-        y = g0hat(np.sqrt(u/a))*Lna(k, 0, u)
+        y = g0hat(np.sqrt(u / a)) * Lna(k, 0, u)
         return np.trapz(y, u)
-
