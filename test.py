@@ -500,6 +500,29 @@ class testArbitrary(unittest.TestCase):
                     with self.subTest(msg):
                         self.assertIsNone(np.testing.assert_array_almost_equal(res, result))
 
+
+    def test_Lna(self):
+            import mpmath as mp
+
+            rng = np.random.default_rng(6)
+
+            for a in range(-41, 42):
+                for n in range(12):
+                    x = rng.lognormal(size=301, sigma=8)  # Just set some constants
+                    sign = np.sign(rng.normal(0, size=len(x)))
+                    x = sign * x
+
+                    res = np.array([float(mp.laguerre(n, a, i)) for i in x])
+                    result = lm.Lna(n, a, x)
+
+                    fractional_difference = np.abs((res - result) / res) * 100
+                    fractional_difference_max = np.max(fractional_difference)
+                    fractional_difference_arg = np.argmax(fractional_difference)
+
+                    msg = f"Fractional diff = {fractional_difference_max:.1f}, (n, a) = ({n:.1e}, {a:.1e}) with x = {x[fractional_difference_arg]:.3e}"
+                    with self.subTest(msg):
+                        self.assertTrue(fractional_difference_max < 0.005)
+
     
 if __name__ == '__main__':
     unittest.main()
