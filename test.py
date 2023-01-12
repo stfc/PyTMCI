@@ -542,7 +542,7 @@ class testArbitrary(unittest.TestCase):
         # see which ones are significant.
 
         print("")
-        print("-----"*5)
+        print("-----" * 5)
         print("Testing Ilnk. This takes some time (about 10mins on my laptop).")
 
         import mpmath as mp

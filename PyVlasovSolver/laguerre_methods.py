@@ -102,23 +102,6 @@ def Ilnk(w: float, a: float, l: int, n: int, k: int, beta: float) -> float:
                   absw**2 / beta**2 / cn.c**2 / 4 / a))
 
 
-def Gksum(w: float, a: float, l: int, n: int, Gk_array):
-    '''
-    Not used in practice to avoid re-computing constants. Left for research.
-
-    Computes
-    Sum_{k=0}^{len(Gk_array)} G_{k} * I _{lnk}(w, a, l, n, k)
-
-    Where G_{k} is an array of pre-computed coefficients of a Laguerre series,
-    and I_{lnk} is defined in the function Ilnk(w, a, l, n, k).
-    '''
-    total = 0
-    for k, Gk in enumerate(Gk_array):
-        total += Gk * Ilnk(w, a, l, n, k)
-
-    return total
-
-
 def generateGksumDict(Gk_array, w, a, max_l, max_n, beta):
     '''
     Computes Gksum for all possible combinations of l and n and returns a
