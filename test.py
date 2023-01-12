@@ -579,6 +579,38 @@ class testArbitrary(unittest.TestCase):
                             with self.subTest(msg):
                                 self.assertIsNone(np.testing.assert_allclose(result, res, rtol=1e-6, atol=1e-12))
 
+    def test_generateGksumDict(self):
+        '''
+        Test generateGksumDict using the already-tested Ilnk method.
+        '''
+        rng = np.random.default_rng(7)
+        w = rng.lognormal(size=351, sigma=11)  # Just set some constants
+        # lognormal can produce some huge and tiny numbers. Limit them to some reasonable range.
+        w = w[w < MAXw]
+        w = w[w > MINw]
+        sign = np.sign(rng.normal(0, size=len(w)))
+        w = sign * w
+
+        Gk_array = rng.random(size=LAG_MAXK + 1)
+
+        for beta in [0.1, 0.5, 0.99]:
+            for a in [0.001, 0.01, 0.1, 1, 10]:
+
+                result = lm.generateGksumDict(Gk_array, w, a, LAG_MAXL, LAG_MAXN, beta)
+
+                for l in range(-LAG_MAXL, LAG_MAXL + 1):
+                    for n in range(LAG_MAXN + 1):
+
+                        total = 0
+                        for k, Gk in enumerate(Gk_array):
+                            total += Gk * lm.Ilnk(w, a, l, n, k, beta)
+
+                        res = total
+
+                        msg = f"a: {a:.2e}, l: {l}, n: {n}, beta: {beta:.2e}"
+                        with self.subTest(msg):
+                            self.assertIsNone(np.testing.assert_allclose(result[l][n], res, rtol=1e-6, atol=1e-12))
+
 
 if __name__ == '__main__':
     unittest.main()

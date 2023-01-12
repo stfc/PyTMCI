@@ -104,7 +104,10 @@ def Ilnk(w: float, a: float, l: int, n: int, k: int, beta: float) -> float:
 
 def generateGksumDict(Gk_array, w, a, max_l, max_n, beta):
     '''
-    Computes Gksum for all possible combinations of l and n and returns a
+    Computes
+    Sum_{k=0}^{len(Gk_array)} G_{k} * I _{lnk}(w, a, l, n, k)
+
+    for all possible combinations of l and n and returns a
     dictionary of values. This is usually used to avoid having to recompute
     Gksum for every element of the matrix (size (max_n*(2*max_l + 1))**2)
     when there are only (max_n*(2*max_l + 1)) possible combinations of l and n.
