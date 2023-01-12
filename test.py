@@ -5,6 +5,9 @@ import PyVlasovSolver as vs
 from PyVlasovSolver import airbag_methods as am
 from PyVlasovSolver import laguerre_methods as lm
 
+# Max and min frequencies to check.
+MAXw = 1e13
+MINw = 1e-6
 
 class TestGeneral(unittest.TestCase):
     def test_impedanceSampleFrequencies_l00(self):
@@ -434,6 +437,13 @@ class TestNHT(unittest.TestCase):
                             self.assertIsNone(np.testing.assert_array_almost_equal(base_matrix, my_base_matrix))
 
 
+# Some quantities are limited due to things like overflow errors.
+# The max and min values specified here
+LAG_MAXL = 20
+LAG_MAXN = 11
+LAG_MAXK = LAG_MAXN
+
+
 class testArbitrary(unittest.TestCase):
     def test_factorial(self):
         # Just checking the first 50 values.
@@ -500,29 +510,75 @@ class testArbitrary(unittest.TestCase):
                     with self.subTest(msg):
                         self.assertIsNone(np.testing.assert_array_almost_equal(res, result))
 
-
     def test_Lna(self):
-            import mpmath as mp
+        import mpmath as mp
 
-            rng = np.random.default_rng(6)
+        rng = np.random.default_rng(6)
 
-            for a in range(-41, 42):
-                for n in range(12):
-                    x = rng.lognormal(size=301, sigma=8)  # Just set some constants
-                    sign = np.sign(rng.normal(0, size=len(x)))
-                    x = sign * x
+        for a in range(-41, 42):
+            for n in range(12):
+                x = rng.lognormal(size=301, sigma=8)  # Just set some constants
+                sign = np.sign(rng.normal(0, size=len(x)))
+                x = sign * x
 
-                    res = np.array([float(mp.laguerre(n, a, i)) for i in x])
-                    result = lm.Lna(n, a, x)
+                res = np.array([float(mp.laguerre(n, a, i)) for i in x])
+                result = lm.Lna(n, a, x)
 
-                    fractional_difference = np.abs((res - result) / res) * 100
-                    fractional_difference_max = np.max(fractional_difference)
-                    fractional_difference_arg = np.argmax(fractional_difference)
+                fractional_difference = np.abs((res - result) / res) * 100
+                fractional_difference_max = np.max(fractional_difference)
+                fractional_difference_arg = np.argmax(fractional_difference)
 
-                    msg = f"Fractional diff = {fractional_difference_max:.1f}, (n, a) = ({n:.1e}, {a:.1e}) with x = {x[fractional_difference_arg]:.3e}"
-                    with self.subTest(msg):
-                        self.assertTrue(fractional_difference_max < 0.005)
+                msg = f"Fractional diff = {fractional_difference_max:.1f}, (n, a) = ({n:.1e}, {a:.1e}) with x = {x[fractional_difference_arg]:.3e}"
+                with self.subTest(msg):
+                    self.assertTrue(fractional_difference_max < 0.005)
 
-    
+    def test_Ilnk(self):
+
+        # At time of writing Ilnk is not used anymore, and has been replaced by
+        # generateGksumDict, because Ilnk only appears in a summation, and by
+        # computing the summation in one go then I avoid recomputing the same
+        # thing many times. Nevertheless, Ilnk has been retained and will be
+        # tested because it allows users to investigate individual terms and
+        # see which ones are significant.
+
+        print("")
+        print("-----"*5)
+        print("Testing Ilnk. This takes some time (about 10mins on my laptop).")
+
+        import mpmath as mp
+        c = cn.c
+
+        rng = np.random.default_rng(7)
+        w = rng.lognormal(size=351, sigma=11)  # Just set some constants
+        # lognormal can produce some huge and tiny numbers. Limit them to some reasonable range.
+        w = w[w < MAXw]
+        w = w[w > MINw]
+        sign = np.sign(rng.normal(0, size=len(w)))
+        w = sign * w
+
+        laguerre = mp.memoize(mp.laguerre)
+
+        for l in range(-LAG_MAXL, LAG_MAXL + 1):
+            for n in range(LAG_MAXN + 1):
+                for k in range(LAG_MAXK + 1):
+                    for beta in [0.1, 0.5, 0.99]:
+                        for a in [0.001, 0.01, 0.1, 1, 10]:
+                            L1 = np.array([float(laguerre(n, k - n, np.abs(i)**2 / (4 * a * beta**2 * c**2), zeroprec=1000)) for i in w])
+                            L2 = np.array([float(laguerre(k, np.abs(l) + n - k, np.abs(i)**2 / (4 * a * beta**2 * c**2), zeroprec=1000)) for i in w])
+
+                            res = ((np.sign(w) * np.sign(l))**np.abs(l)
+                                   * (-1)**(n + k)
+                                   * (np.abs(w) / (2 * a * beta * c))**np.abs(l)
+                                   * np.exp(-np.abs(w)**2 / (4 * a * beta**2 * c**2))
+                                   * L1
+                                   * L2)
+
+                            result = lm.Ilnk(w, a, l, n, k, beta)
+
+                            msg = f"a: {a:.2e}, l: {l}, n: {n}, k: {k}, beta: {beta:.2e}"
+                            with self.subTest(msg):
+                                self.assertIsNone(np.testing.assert_allclose(result, res, rtol=1e-6, atol=1e-12))
+
+
 if __name__ == '__main__':
     unittest.main()

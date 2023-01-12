@@ -72,6 +72,9 @@ class vlasovSolver():
                      + self.accelerator.w_b / 2 / np.pi
                      + i * self.accelerator.w_s / 2 / np.pi)
 
+        if np.flatnonzero(2*np.pi*fp > 1e13).shape[0] > 0:
+            raise ValueError("Frequencies greater than 1.5E12 have not been tested.")
+
         return fp
 
     def calculateGk(self):

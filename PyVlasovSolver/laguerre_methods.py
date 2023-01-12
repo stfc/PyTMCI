@@ -89,8 +89,8 @@ def Ilnk(w: float, a: float, l: int, n: int, k: int, beta: float) -> float:
     n = radial mode number
     k = sum index
     '''
-    absl = abs(l)
-    absw = abs(w)
+    absl = np.abs(l)
+    absw = np.abs(w)
     sigma = 0
 
     return ((np.sign(w * l))**absl
