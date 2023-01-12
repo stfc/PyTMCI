@@ -177,7 +177,7 @@ def Qln(w: float, a: float, l: int, n: int, beta: float) -> float:
     sqrta = np.sqrt(a)
 
     return (np.sign(l)**absl
-            * a**(absl / 2 - 1) * 1 / (2 * np.math.factorial(n))
+            * a**(absl / 2 - 1) * 1 / (2 * factorial(n))
             * (1 / 2 / sqrta * w / beta / cn.c)**(2 * n + absl)
             * np.exp(-1 / 4 / a * w**2 / beta**2 / cn.c**2))
 

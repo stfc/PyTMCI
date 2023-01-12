@@ -612,6 +612,33 @@ class testArbitrary(unittest.TestCase):
                         with self.subTest(msg):
                             self.assertIsNone(np.testing.assert_allclose(result[l][n], res, rtol=1e-6, atol=1e-12))
 
+    def test_Qln(self):
+        import mpmath as mp
+        c = cn.c
+
+        rng = np.random.default_rng(7)
+        w = rng.lognormal(size=351, sigma=11)  # Just set some constants
+        # lognormal can produce some huge and tiny numbers. Limit them to some reasonable range.
+        w = w[w < MAXw]
+        w = w[w > MINw]
+        sign = np.sign(rng.normal(0, size=len(w)))
+        w = sign * w
+
+        for l in range(-LAG_MAXL, LAG_MAXL + 1):
+            for n in range(LAG_MAXN + 1):
+                for beta in [0.1, 0.5, 0.99]:
+                    for a in [0.001, 0.01, 0.1, 1, 10]:
+                        absl = np.abs(l)
+                        res = (a**(absl / 2 - 1) * np.sign(l)**(absl)
+                               * 1 / (2 * np.math.factorial(n))
+                               * (w / (2 * np.sqrt(a) * beta * c))**(2 * n + absl)
+                               * np.exp(-w**2 / 4 / a / beta**2 / c**2))
+
+                        result = lm.Qln(w, a, l, n, beta)
+                        msg = f"a: {a:.2e}, l: {l}, n: {n}, beta: {beta:.2e}"
+                        with self.subTest(msg):
+                            self.assertIsNone(np.testing.assert_allclose(result, res, rtol=1e-6, atol=1e-12))
+
 
 if __name__ == '__main__':
     unittest.main()
