@@ -9,6 +9,7 @@ from PyVlasovSolver import laguerre_methods as lm
 MAXw = 1e13
 MINw = 1e-6
 
+
 class TestGeneral(unittest.TestCase):
     def test_impedanceSampleFrequencies_l00(self):
         """

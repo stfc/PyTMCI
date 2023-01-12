@@ -72,7 +72,7 @@ class vlasovSolver():
                      + self.accelerator.w_b / 2 / np.pi
                      + i * self.accelerator.w_s / 2 / np.pi)
 
-        if np.flatnonzero(2*np.pi*fp > 1e13).shape[0] > 0:
+        if np.flatnonzero(2 * np.pi * fp > 1e13).shape[0] > 0:
             raise ValueError("Frequencies greater than 1.5E12 have not been tested.")
 
         return fp
@@ -192,7 +192,6 @@ class airbag(vlasovSolver):
     def __init__(self, accelerator, max_l, zhat, *args, **kwargs):
         super().__init__(accelerator, max_l, 0)
         self.zhat = zhat
-
 
     def _generateBaseMatrix_perturbedSimple(self, zperp, max_harmonics, multi_bunch_mode):
         sample_frequencies = self._impedanceSampleFrequencies(max_harmonics, multi_bunch_mode)[0]
