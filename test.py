@@ -635,6 +635,23 @@ class testArbitrary(unittest.TestCase):
                         with self.subTest(msg):
                             self.assertIsNone(np.testing.assert_allclose(result, res, rtol=1e-6, atol=1e-12))
 
+    def test_generateFactCoefficient(self):
+        import scipy.special as sp
+
+        # This is a very simple calculation but does involve factorials, so
+        # there's always a risk of overflow errors. To ensure I avoid these
+        # in the test I'll use the gammaln
+        result = lm.generateFactCoefficient(LAG_MAXL, LAG_MAXN)
+
+        # only depends on |l| so just check the positive values
+        for l in range(0, LAG_MAXL + 1):
+            for n in range(0, LAG_MAXN + 1):
+                res = np.exp(sp.gammaln(n + 1) - sp.gammaln(np.abs(l) + n + 1))
+
+                msg = f"l: {l}, n: {n}"
+                with self.subTest(msg):
+                    self.assertAlmostEqual(result[l][n], res, places=5)
+
 
 if __name__ == '__main__':
     unittest.main()
