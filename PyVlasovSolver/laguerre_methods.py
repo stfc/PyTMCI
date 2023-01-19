@@ -29,7 +29,7 @@ def rising_fact(z: complex, n: int) -> complex:
     # integer representation can overflow; although pure python would not.
     # To overcome this, total could be specified as a float so that larger
     # numbers can be represented. See tests for verified range of inputs.
-    total = 1
+    total = 1.0
 
     for k in range(n):
         total *= (z + k)

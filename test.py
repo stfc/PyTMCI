@@ -525,13 +525,9 @@ class testArbitrary(unittest.TestCase):
                 res = np.array([float(mp.laguerre(n, a, i)) for i in x])
                 result = lm.Lna(n, a, x)
 
-                fractional_difference = np.abs((res - result) / res) * 100
-                fractional_difference_max = np.max(fractional_difference)
-                fractional_difference_arg = np.argmax(fractional_difference)
-
-                msg = f"Fractional diff = {fractional_difference_max:.1f}, (n, a) = ({n:.1e}, {a:.1e}) with x = {x[fractional_difference_arg]:.3e}"
+                msg = f"(n, a) = ({n:.1e}, {a:.1e})"
                 with self.subTest(msg):
-                    self.assertTrue(fractional_difference_max < 0.005)
+                    self.assertIsNone(np.testing.assert_allclose(result, res, rtol=1e-6, atol=1e-12))
 
     def test_Ilnk(self):
 
