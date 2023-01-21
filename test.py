@@ -702,5 +702,110 @@ class testArbitrary(unittest.TestCase):
                 self.assertIsNone(np.testing.assert_array_equal(result, L[i]))
 
 
+    def test_generateSimpleBaseMatrix(self):
+        rng = np.random.default_rng(5)
+
+        for num_bunches in range(3):
+            for multi_bunch_mode in range(num_bunches):
+                for max_l in [5, 10, 15, 20]:
+                    for max_n in [3, 5, 10]:
+                        for a in [0.01, 0.1, 1.0, 10]:
+
+                            Gk_array = rng.lognormal(sigma=3, size=rng.integers(low=2, high=8))
+
+                            circumference = 143.456
+                            mass = 3.5e-30
+                            charge = 2.6e-19
+                            beta = 0.2
+                            Qb = 2.9
+                            Qs = 0.85
+                            alpha = 0.12
+                            chromaticity = -0.8
+                            acc1 = vs.accelerator(circumference,
+                                                  mass,
+                                                  charge,
+                                                  beta,
+                                                  Qb,
+                                                  Qs,
+                                                  alpha,
+                                                  chromaticity,
+                                                  num_bunches)
+                            max_harmonics = 100
+
+                            # Calculate slippage factor.
+                            f0 = beta * cn.c / circumference
+                            w_b = 2 * np.pi * Qb * f0
+                            gamma = 1 / np.sqrt(1 - beta**2)
+                            eta = alpha - 1 / gamma**2  # Chao Eq. 1.10, pp. 9
+                            w_xi = chromaticity * w_b / eta  # Chao Eq. 6.181, pp. 338
+
+                            # Verify that accelerator parameters have been worked out correctly
+                            self.assertAlmostEqual(f0, acc1.f0, places=6)
+                            self.assertAlmostEqual(w_b, acc1.w_b, places=6)
+                            self.assertAlmostEqual(gamma, acc1.gamma, places=6)
+                            self.assertAlmostEqual(eta, acc1.eta, places=6)
+                            self.assertAlmostEqual(w_xi, acc1.w_xi, places=6)
+
+                            p = np.arange(-max_harmonics, max_harmonics + 1, dtype=np.float64)
+
+                            # Often impedance is given as a function of f=w/2/pi, rather than w so
+                            # find this first
+                            fp = ((p * num_bunches + multi_bunch_mode) * f0
+                                  + Qb * f0
+                                  + 0 * Qs * f0)
+                            wp = 2 * np.pi * fp
+                            w = wp - w_xi
+
+                            # for perturbed-simple all Ilnk and Qln's are sampled at the same frequency.
+                            Ilnksums = {}
+                            for l in range(-max_l, max_l + 1):
+                                temp = {}
+                                for n in range(max_n + 1):
+                                    temp2 = 0
+                                    for k, Gk in enumerate(Gk_array):
+                                        temp2 += Gk * lm.Ilnk(w, a, l, n, k, beta)
+
+                                    temp[n] = temp2
+
+                                Ilnksums[l] = temp
+
+                            Qln = {}
+                            for l in range(-max_l, max_l + 1):
+                                temp = {}
+                                for n in range(max_n + 1):
+                                    temp[n] = lm.Qln(w, a, l, n, beta)
+
+                                Qln[l] = temp
+
+                            gamma_coef = lm.generateFactCoefficient(max_l, max_n)
+
+                            # Impedance
+                            def zperp(f):
+                                return f + 1j / f
+
+                            sampled_impedance = zperp(fp)
+
+                            # Allocate memory for the matrix
+                            res = np.zeros(shape=((2 * max_l + 1) * (max_n + 1),
+                                                  (2 * max_l + 1) * (max_n + 1)),
+                                           dtype=np.complex128)
+
+                            for nn in range(max_n + 1):
+                                for nnp in range(max_n + 1):
+                                    for ll, l in enumerate(range(-max_l, max_l + 1)):
+                                        temp = sampled_impedance * Ilnksums[l][nn]
+                                        for llp, lp in enumerate(range(-max_l, max_l + 1)):
+                                            res[nn * (2 * max_l + 1) + ll, nnp * (2 * max_l + 1) + llp] = 1j**(l - lp) * gamma_coef[abs(l)][nn] * np.sum(temp * Qln[lp][nnp])
+
+                            test = vs.arbitraryLongitudinal(acc1, max_l, max_n)
+                            test.Gk = Gk_array
+                            test.a = a
+                            result = test.generateBaseMatrix('perturbed-simple', zperp, max_harmonics, multi_bunch_mode)
+
+                            argmax = np.argmax(np.abs(res - result))
+                            msg = f"x = {res.flatten()[argmax]:.5e}, y={result.flatten()[argmax]:.5e}"
+                            with self.subTest(msg):
+                                self.assertIsNone(np.testing.assert_allclose(res, result, rtol=1e-6, atol=1e-12))
+
 if __name__ == '__main__':
     unittest.main()
