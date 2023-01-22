@@ -200,8 +200,7 @@ class airbag(vlasovSolver):
             self.max_l, self.zhat,
             sample_frequencies, sampled_dipole_impedance,
             self.accelerator.f0, self.accelerator.num_bunches,
-            self.accelerator.beta,
-            self.accelerator.w_b, self.accelerator.w_xi)
+            self.accelerator.beta, self.accelerator.w_xi)
 
         return self.base_matrix
 
@@ -212,8 +211,7 @@ class airbag(vlasovSolver):
             self.max_l, self.zhat,
             sample_frequencies, sampled_dipole_impedance,
             self.accelerator.f0, self.accelerator.num_bunches,
-            self.accelerator.beta,
-            self.accelerator.w_b, self.accelerator.w_xi)
+            self.accelerator.beta, self.accelerator.w_xi)
 
         return self.base_matrix
 
@@ -241,8 +239,7 @@ class NHT(vlasovSolver):
             self.max_l, self.ring_radii,
             sample_frequencies, sampled_dipole_impedance,
             self.accelerator.f0, self.accelerator.num_bunches,
-            self.accelerator.beta,
-            self.accelerator.w_b, self.accelerator.w_xi)
+            self.accelerator.beta, self.accelerator.w_xi)
 
         return self.base_matrix
 
@@ -257,8 +254,7 @@ class NHT(vlasovSolver):
             self.max_l, self.ring_radii,
             sample_frequencies, sampled_dipole_impedance,
             self.accelerator.f0, self.accelerator.num_bunches,
-            self.accelerator.beta,
-            self.accelerator.w_b, self.accelerator.w_xi)
+            self.accelerator.beta, self.accelerator.w_xi)
 
         return self.base_matrix
 
@@ -309,8 +305,7 @@ class arbitraryLongitudinal(vlasovSolver):
             self.max_l, self.max_n, self.a, self.Gk,
             sample_frequencies, sampled_dipole_impedance,
             self.accelerator.f0, self.accelerator.num_bunches,
-            self.accelerator.beta,
-            self.accelerator.w_b, self.accelerator.w_xi)
+            self.accelerator.beta, self.accelerator.w_xi)
 
         return self.base_matrix
 
@@ -328,8 +323,7 @@ class arbitraryLongitudinal(vlasovSolver):
             self.max_l, self.max_n, self.a, self.Gk,
             sample_frequencies, sampled_dipole_impedance,
             self.accelerator.f0, self.accelerator.num_bunches,
-            self.accelerator.beta,
-            self.accelerator.w_b, self.accelerator.w_xi)
+            self.accelerator.beta, self.accelerator.w_xi)
 
         return self.base_matrix
 

@@ -7,7 +7,7 @@ def generateSimpleBaseMatrix(max_l: int, zhat,
                              sampled_frequencies: np.ndarray,
                              sampled_impedance: np.ndarray,
                              f0: float, num_bunches: float,
-                             beta: float, w_b: float, w_xi: float) -> np.ndarray:
+                             beta: float, w_xi: float) -> np.ndarray:
     '''
     Provided l*ws is neglected in the frequency sampling, the bessel functions
     and impedance are sampled at the same frequency for every matrix element.
@@ -92,7 +92,7 @@ def generateFullBaseMatrix(max_l: int, zhat,
                            sampled_frequencies: np.ndarray,
                            sampled_impedance: np.ndarray,
                            f0: float, num_bunches: float,
-                           beta: float, w_b: float, w_xi: float) -> np.ndarray:
+                           beta: float, w_xi: float) -> np.ndarray:
     '''
 
     '''

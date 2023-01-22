@@ -342,7 +342,7 @@ def generateLMatrix(max_l, max_n):
 
 def generateSimpleBaseMatrix(max_l: int, max_n: int, a: float, Gk: np.ndarray,
                              sample_frequencies: np.ndarray, sampled_impedance: np.ndarray,
-                             f0: float, num_bunches: float, beta: float, w_b: float, w_xi: float) -> np.ndarray:
+                             f0: float, num_bunches: float, beta: float, w_xi: float) -> np.ndarray:
     '''
     max_l = max number of azimuthal modes
     max_n = max number of radial modes
@@ -353,7 +353,6 @@ def generateSimpleBaseMatrix(max_l: int, max_n: int, a: float, Gk: np.ndarray,
     f0    = Accelerator revolution frequencies
     num_bunches = number of bunches (bunches assumed identical and equidistant)
     beta  = relativistic beta (v/c)
-    w_b   = angular betatron frequency (2pi * Q * f0)
     w_xi  = head-tail phase shift angle
     '''
     fp = sample_frequencies
@@ -429,7 +428,7 @@ def generateSimpleBaseMatrix(max_l: int, max_n: int, a: float, Gk: np.ndarray,
 
 def generateFullBaseMatrix(max_l: int, max_n: int, a: float, Gk: np.ndarray,
                            sample_frequencies: np.ndarray, sampled_impedance: np.ndarray,
-                           f0: float, num_bunches: float, beta: float, w_b: float, w_xi: float) -> np.ndarray:
+                           f0: float, num_bunches: float, beta: float, w_xi: float) -> np.ndarray:
     '''
     max_l = max number of azimuthal modes
     max_n = max number of radial modes
@@ -440,7 +439,6 @@ def generateFullBaseMatrix(max_l: int, max_n: int, a: float, Gk: np.ndarray,
     f0    = Accelerator revolution frequencies
     num_bunches = number of bunches (bunches assumed identical and equidistant)
     beta  = relativistic beta (v/c)
-    w_b   = angular betatron frequency (2pi * Q * f0)
     w_xi  = head-tail phase shift angle
     '''
     fp = sample_frequencies

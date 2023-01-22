@@ -7,7 +7,7 @@ from . import airbag_methods as am
 
 def generateSimpleBaseMatrix(max_l: int, ring_radii,
                              sampled_frequencies: np.ndarray, sampled_impedance: np.ndarray,
-                             f0: float, num_bunches: float, beta: float, w_b: float, w_xi: float) -> np.ndarray:
+                             f0: float, num_bunches: float, beta: float, w_xi: float) -> np.ndarray:
     num_rings = len(ring_radii)
     fp = sampled_frequencies
 
@@ -69,7 +69,7 @@ def generateSimpleBaseMatrix(max_l: int, ring_radii,
 
 def generateFullBaseMatrix(max_l: int, ring_radii,
                            sampled_frequencies: np.ndarray, sampled_impedance: np.ndarray,
-                           f0: float, num_bunches: float, beta: float, w_b: float, w_xi: float) -> np.ndarray:
+                           f0: float, num_bunches: float, beta: float, w_xi: float) -> np.ndarray:
     num_rings = len(ring_radii)
     fp = sampled_frequencies
     wp = 2 * np.pi * fp
