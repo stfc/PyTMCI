@@ -363,10 +363,10 @@ def generateSimpleBaseMatrix(max_l: int, max_n: int, a: float, Gk: np.ndarray,
     # Make a list of all the values of l that will be calculated, this gets repeated a few times
     l = np.arange(-int(max_l), int(max_l) + 1)
 
-    # # Preliminarily work out all of the sum of Gk * Integrals
+    # Preliminarily work out all of the sum of Gk * Integrals
     Gksums = generateGksumDict(Gk, w, a, max_l, max_n, beta)
 
-    # # Preliminarily work out all values of Q_{l'n'}
+    # Preliminarily work out all values of Q_{l'n'}
     Qln_vals = generateQlnDict(w, a, max_l, max_n, beta)
 
     # Generate coefficients which depend on n
@@ -423,6 +423,62 @@ def generateSimpleBaseMatrix(max_l: int, max_n: int, a: float, Gk: np.ndarray,
                     matrix[nn * lenl + (2 * max_l + 1) - ii - 1, nnp * lenl + jj] = matrix[nn * lenl + ii, nnp * lenl + jj]
                     matrix[nn * lenl + (2 * max_l + 1) - ii - 1, nnp * lenl + (2 * max_l + 1) - jj - 1] = matrix[nn * lenl + ii, nnp * lenl + jj]
                     matrix[nn * lenl + ii, nnp * lenl + (2 * max_l + 1) - jj - 1] = matrix[nn * lenl + ii, nnp * lenl + jj]
+
+    return matrix
+
+
+def generateFullBaseMatrix(max_l: int, max_n: int, a: float, Gk: np.ndarray,
+                           sample_frequencies: np.ndarray, sampled_impedance: np.ndarray,
+                           f0: float, num_bunches: float, beta: float, w_b: float, w_xi: float) -> np.ndarray:
+    '''
+    max_l = max number of azimuthal modes
+    max_n = max number of radial modes
+    a     = constant from unperturbed distribution fit
+    Gk = Laguerre series coefficients for the longitudinal distributions
+    sample_frequencies = frequencies at which the impedance was sampled (f, not omega)
+    sampled_impedance = dipolar impedance (Ohm/m) sampled at the sample frequencies
+    f0    = Accelerator revolution frequencies
+    num_bunches = number of bunches (bunches assumed identical and equidistant)
+    beta  = relativistic beta (v/c)
+    w_b   = angular betatron frequency (2pi * Q * f0)
+    w_xi  = head-tail phase shift angle
+    '''
+    fp = sample_frequencies
+    wp = 2 * np.pi * fp
+    w = wp - w_xi
+
+    # Make a list of all the values of l that will be calculated, this gets repeated a few times
+    l = np.arange(-int(max_l), int(max_l) + 1)
+
+    # Preliminarily work out all of the sum of Gk * Integrals
+    # Since the index of w is l, this can just be done in a loop over w
+    Gksums = []
+    for i in w:
+        Gksums.append(generateGksumDict(Gk, i, a, max_l, max_n, beta))
+
+    # Preliminarily work out all values of Q_{l'n'}
+    # Since the index of w is l, this can just be done in a loop over w
+    Qln_vals = []
+    for i in w:
+        Qln_vals.append(generateQlnDict(i, a, max_l, max_n, beta))
+
+    # Generate coefficients which depend on n
+    gamma_coef = generateFactCoefficient(max_l, max_n)
+
+    # Allocate memory for the matrix
+    matrix = np.zeros(shape=((2 * max_l + 1) * (max_n + 1),
+                             (2 * max_l + 1) * (max_n + 1)),
+                      dtype=np.complex128)
+
+    # populate the matrix
+    lenl = len(l)
+    temp = np.zeros(len(fp), dtype=np.complex128)
+    for nn in range(max_n + 1):  # rows, n
+        for nnp in range(max_n + 1):  # cols, n'
+            for ii, i in enumerate(l):  # rows, l
+                temp = Gksums[i][i][nn] * sampled_impedance[i]  # calculate this outside the next loop for speed
+                for jj, j in enumerate(l):  # cols, l'
+                    matrix[nn * lenl + ii, nnp * lenl + jj] = (1j)**(i - j) * gamma_coef[np.abs(i)][nn] * np.sum(Qln_vals[i][j][nnp] * temp)
 
     return matrix
 

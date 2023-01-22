@@ -314,6 +314,25 @@ class arbitraryLongitudinal(vlasovSolver):
 
         return self.base_matrix
 
+    def _generateBaseMatrix_perturbedFull(self, zperp, max_harmonics, multi_bunch_mode):
+        if len(self.Gk) == 0:
+            raise Exception("Unperturbed longitudinal distribution has not"
+                            + "been fit. \n Run calculateGk() before"
+                            + "calculating a base matrix.")
+            return self.base_matrix
+
+        sample_frequencies = self._impedanceSampleFrequencies(max_harmonics, multi_bunch_mode)
+        sampled_dipole_impedance = zperp(sample_frequencies)
+
+        self.base_matrix = lm.generateFullBaseMatrix(
+            self.max_l, self.max_n, self.a, self.Gk,
+            sample_frequencies, sampled_dipole_impedance,
+            self.accelerator.f0, self.accelerator.num_bunches,
+            self.accelerator.beta,
+            self.accelerator.w_b, self.accelerator.w_xi)
+
+        return self.base_matrix
+
     def g1(self, eigenvectors, max_r, grid_size):
         return lm.g1(grid_size, self.a, eigenvectors, max_r,
                      self.max_l, self.max_n,
