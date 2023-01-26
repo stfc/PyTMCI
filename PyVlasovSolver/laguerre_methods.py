@@ -578,7 +578,7 @@ def midpointrichardson(func, a, b, divmax=10, tol=1.0e-8, show=False):
     return R[i][i]
 
 
-def normalisation_coefficient(func, split_position):
+def normalisation_coefficient(func, method, distance=-1):
     '''
     Finds the normalisation coefficient for the function func.
     split_position is required for the numerical integration and
@@ -586,9 +586,19 @@ def normalisation_coefficient(func, split_position):
     distribution. For example with a gaussian it might be set to
     1*sigma; although the exact value should not affect the result.
     '''
-    i1 = si.romberg(lambda x: x * func(x), 0, split_position)
-    i2 = midpointrichardson(lambda t: 1 / t**3 * func(1 / t), 0, 1 / split_position)
-    normalisation_coefficient = 1 / (i1 + i2)
+    if method.lower() == 'laguerre-gauss':
+        g, w = np.polynomial.laguerre.laggauss(100)
+        normalisation_coefficient = 1 / np.sum(w * np.exp(g) * g * func(g))
+
+    elif method.lower() == 'midpoint':
+        i1 = si.romberg(lambda x: x * func(x), 0, distance)
+        i2 = midpointrichardson(lambda t: 1 / t**3 * func(1 / t), 0, 1 / distance)
+        normalisation_coefficient = 1 / (i1 + i2)
+
+    elif method.lower() == 'trapz':
+        x = np.linspace(0, distance, 5000)
+        y = x * func(x)
+        normalisation_coefficient = 1 / np.trapz(y, x)
 
     return normalisation_coefficient
 
@@ -605,7 +615,7 @@ def normalise(func, normalisation_coefficient):
 
 
 # =========== Unperturbed Distribution
-def calculateGk(g0hat, a, k, method='midpoint', max_radius=1):
+def calculateGk(a, k, g0hat, method='midpoint', max_radius=-1, numerical_normalise=False):
     '''
     Calculate G_k by performing the integral
     G_k = \int_0^\infty ĝ_0(r) L_k^{(0)}(ar^2) d(ar^2)
@@ -631,6 +641,10 @@ def calculateGk(g0hat, a, k, method='midpoint', max_radius=1):
                      If it is too large the steps between samples will be too wide.
 
     '''
+    if numerical_normalise is True:
+        norm_factor = normalisation_coefficient(g0hat, method, max_radius / 10)
+        g0hat = normalise(g0hat, norm_factor)
+
     if method.lower() == 'laguerre-gauss':
         # Note that since g0hat does not necessarily have the required weight
         # function, the inverse of the weight function np.exp(x) is explicitly

@@ -273,15 +273,13 @@ class arbitraryLongitudinal(vlasovSolver):
         self.a = 0
         self.Gk = np.array([])
 
-    def calculateGk(self, g0hat, a, terms, max_radius=1,
-                    numerical_normalise=False, *args, **kwargs):
-
+    def calculateGk(self, a, terms, g0hat, method, max_radius=1, numerical_normalise=False):
         if terms > 10:
             raise ValueError("max terms > 10 has not been tested.")
 
         Gk = np.zeros(terms, dtype=np.float64)
         for k in range(terms):
-            Gk[k] = lm.calculateGk(g0hat, a, k, **kwargs)
+            Gk[k] = lm.calculateGk(a, k, g0hat, method, max_radius, numerical_normalise)
 
         self.a = a
         self.Gk = Gk
