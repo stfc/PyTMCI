@@ -51,9 +51,9 @@ def generateSimpleBaseMatrix(max_l: int, ring_radii,
     # The fourth loop is looping over columns within a submatrix. (values of l')
     lenl = len(l)
     for ring1 in range(num_rings):  # rows, n
-        for ring2 in range(num_rings):  # cols, n'
-            for ii, i in enumerate(range(-max_l, 1)):  # rows, l
-                temp = jdict[ring1][i] * sampled_impedance
+        for ii, i in enumerate(range(-max_l, 1)):  # rows, l
+            temp = jdict[ring1][i] * sampled_impedance
+            for ring2 in range(num_rings):  # cols, n'
                 for jj, j in enumerate(range(-max_l, 1)):  # cols, l'
                     matrix[ring1 * lenl + ii, ring2 * lenl + jj] = 1 / num_rings * (1j)**(i - j) * np.sum(temp * jdict[ring2][j])
 
@@ -97,9 +97,9 @@ def generateFullBaseMatrix(max_l: int, ring_radii,
     # populate the matrix
     lenl = len(l)
     for ring1 in range(num_rings):  # rows, n
-        for ring2 in range(num_rings):  # cols, n'
-            for ii, i in enumerate(l):  # rows, l
-                temp = jdict[i][ring1][i] * sampled_impedance[i]
+        for ii, i in enumerate(l):  # rows, l
+            temp = jdict[i][ring1][i] * sampled_impedance[i]
+            for ring2 in range(num_rings):  # cols, n'
                 for jj, j in enumerate(range(-max_l, 1)):  # cols, l'
                     matrix[ring1 * lenl + ii, ring2 * lenl + jj] = 1 / num_rings * (1j)**(i - j) * np.sum(temp * jdict[i][ring2][j])
 
