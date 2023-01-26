@@ -475,8 +475,12 @@ def generateFullBaseMatrix(max_l: int, max_n: int, a: float, Gk: np.ndarray,
         for ii, i in enumerate(l):  # rows, l
             temp = Gksums[i][i][nn] * sampled_impedance[i]  # calculate this outside the next loop for speed
             for nnp in range(max_n + 1):  # cols, n'
-                for jj, j in enumerate(l):  # cols, l'
+                for jj, j in enumerate(range(-max_l, 1)):  # cols, l'
                     matrix[nn * lenl + ii, nnp * lenl + jj] = (1j)**(i - j) * gamma_coef[np.abs(i)][nn] * np.sum(Qln_vals[i][j][nnp] * temp)
+
+                    # The next line is to exploit symmetry. To stop using this symmetry, comment
+                    # out the next line and change enumerate(range(-max_l, 1)) to enumerate(l)
+                    matrix[nn * lenl + ii, (nnp + 1) * lenl - jj - 1] = matrix[nn * lenl + ii, nnp * lenl + jj]
 
     return matrix
 
