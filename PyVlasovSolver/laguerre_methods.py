@@ -394,9 +394,9 @@ def generateSimpleBaseMatrix(max_l: int, max_n: int, a: float, Gk: np.ndarray,
     lenl = len(l)
     temp = np.zeros(len(fp), dtype=np.complex128)
     for nn in range(max_n + 1):  # rows, n
-        for nnp in range(max_n + 1):  # cols, n'
-            for ii, i in enumerate(range(-max_l, 1)):  # rows, l
-                temp = Gksums[i][nn] * sampled_impedance  # calculate this outside the next loop for speed
+        for ii, i in enumerate(range(-max_l, 1)):  # rows, l
+            temp = Gksums[i][nn] * sampled_impedance  # calculate this outside the next loop for speed
+            for nnp in range(max_n + 1):  # cols, n'
                 for jj, j in enumerate(range(-max_l, 1)):  # cols, l'
                     matrix[nn * lenl + ii, nnp * lenl + jj] = (1j)**(i - j) * gamma_coef[np.abs(i)][nn] * np.sum(Qln_vals[j][nnp] * temp)
 
@@ -472,9 +472,9 @@ def generateFullBaseMatrix(max_l: int, max_n: int, a: float, Gk: np.ndarray,
     lenl = len(l)
     temp = np.zeros(len(fp), dtype=np.complex128)
     for nn in range(max_n + 1):  # rows, n
-        for nnp in range(max_n + 1):  # cols, n'
-            for ii, i in enumerate(l):  # rows, l
-                temp = Gksums[i][i][nn] * sampled_impedance[i]  # calculate this outside the next loop for speed
+        for ii, i in enumerate(l):  # rows, l
+            temp = Gksums[i][i][nn] * sampled_impedance[i]  # calculate this outside the next loop for speed
+            for nnp in range(max_n + 1):  # cols, n'
                 for jj, j in enumerate(l):  # cols, l'
                     matrix[nn * lenl + ii, nnp * lenl + jj] = (1j)**(i - j) * gamma_coef[np.abs(i)][nn] * np.sum(Qln_vals[i][j][nnp] * temp)
 
