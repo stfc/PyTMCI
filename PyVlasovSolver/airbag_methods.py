@@ -1,6 +1,7 @@
 import numpy as np                  # Linear algebra and mathematical functions
 import scipy.constants as cn        # Physical constants
 import scipy.special as sp
+import scipy.integrate as si
 
 
 def generateSimpleBaseMatrix(max_l: int, zhat,
@@ -182,3 +183,57 @@ try:
 except ModuleNotFoundError:
     print("Using native Python methods for Airbag Methods.")
     print("Consider installing numba for compiled and parallelised methods.")
+
+
+def generateBroadbandBaseMatrix(max_l: int, zhat,
+                                upper_limit: np.ndarray,
+                                zperp,
+                                f0: float, num_bunches: int,
+                                multi_bunch_mode: int,
+                                beta: float, w_xi: float) -> np.ndarray:
+    '''
+    Prior to Chao's Equation 6.184, the value of Ω in the definition of
+    ω' remains unknown; note that Equation 6.180 is listed in the errata.
+    The perturbation technique that resulted in Equation 6.184 is used
+    extensively to obtain subsequent results, as it defines the frequencies
+    at which the impedance and other functions are sampled. This
+    technique is the basis of PyVlasovSolver's base_matrix_perturbed methods,
+    and makes the assumption that frequency shifts are small compared to
+    the zero-intensity frequencies.
+
+    An alternative approach is first introduced in Chao's Equation 6.213
+    and used in Equation 6.222, which is to change the summation to an integral.
+    This assumes the impedance (and other functions) change very slowly on the
+    scale between harmonics, so that effectively the summation is similar to
+    a Riemann sum, which is an approximation of an integral. Chao describes
+    it as a "broadband impedance" model or a "single-turn wake" model.
+
+    '''
+
+    # Some simplified impedance definitions don't evaluate well at 0, so
+    # add a very small inequality between the magnitude of the upper and
+    # lower limits, making 0 not exactly in the middle.
+    lower_limit = -0.9999 * upper_limit
+
+    def airbag_integrand(wp, l, lp):
+        integrand = (sp.jn(l, (wp - w_xi) * zhat / beta / cn.c)
+                     * sp.jn(lp, (wp - w_xi) * zhat / beta / cn.c)
+                     * zperp(wp / 2 / np.pi))
+        return integrand
+
+    # Allocate memory for the matrix
+    matrix = np.zeros(shape=(2 * max_l + 1, 2 * max_l + 1),
+                      dtype=np.complex128)
+
+    for ii, i in enumerate(range(-max_l, 1)):
+        for jj, j in enumerate(range(-max_l, 1)):
+            re = si.quad(lambda w: np.real(airbag_integrand(w, i, j)), lower_limit, upper_limit)[0]
+            im = si.quad(lambda w: np.imag(airbag_integrand(w, i, j)), lower_limit, upper_limit)[0]
+
+            matrix[ii, jj] = 1j**(i - j) * 1 / (2 * np.pi * f0 * num_bunches) * (re + 1j * im)
+
+            matrix[ii, (2 * max_l + 1) - 1 - jj] = matrix[ii, jj]  # l>l,l'>-l'
+            matrix[(2 * max_l + 1) - 1 - ii, jj] = matrix[ii, jj]
+            matrix[(2 * max_l + 1) - 1 - ii, (2 * max_l + 1) - 1 - jj] = matrix[ii, jj]
+
+    return matrix

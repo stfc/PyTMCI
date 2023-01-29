@@ -2,6 +2,7 @@ import numpy as np                   # Linear algebra and mathematical functions
 import scipy.constants as cn         # Physical constants
 import scipy.integrate as si         # Numerical integration methods (Romberg)
 import scipy.optimize as so          # Root finding
+import scipy.special as sp
 from . import airbag_methods as am
 
 
@@ -178,3 +179,69 @@ def calculateRingRadii(g0hat, num_rings, search_limit):
 
     ring_radii = np.array(region_midpoints[1:])
     return ring_radii
+
+
+def generateBroadbandBaseMatrix(max_l: int, ring_radii,
+                                upper_limit: np.ndarray,
+                                zperp,
+                                f0: float, num_bunches: int,
+                                multi_bunch_mode: int,
+                                beta: float, w_xi: float) -> np.ndarray:
+    num_rings = len(ring_radii)
+
+    # Some simplified impedance definitions don't evaluate well at 0, so
+    # add a very small inequality between the magnitude of the upper and
+    # lower limits, making 0 not exactly in the middle.
+    lower_limit = -0.9999 * upper_limit
+
+    def nht_integrand(wp, ll, lp, n, npp):
+        integrand = (sp.jn(ll, (wp - w_xi) * ring_radii[n] / beta / cn.c)
+                     * sp.jn(lp, (wp - w_xi) * ring_radii[npp] / beta / cn.c)
+                     * zperp(wp / 2 / np.pi))
+        return integrand
+
+    # Make a list of all the values of l that will be calculated, this gets repeated a few times
+    l = np.arange(-int(max_l), int(max_l) + 1)
+
+    # Allocate memory for the matrix
+    matrix = np.zeros(shape=((2 * max_l + 1) * num_rings,
+                             (2 * max_l + 1) * num_rings), dtype=np.complex128)
+
+    # populate the matrix
+    # If num_rings = 2, then max_n = 1, so that z_{n} has indices 0 or 1.
+    # If max_l=2, and num_rings=2 the values of (l, l') are
+    #                  n' = 0                                     n' = 1
+    #         (-2,-2) (-2,-1) (-2,+0) (-2,+1) (-2,+2)    (-2,-2) (-2,-1) (-2,+0) (-2,+1) (-2,+2)
+    #         (-1,-2) (-1,-1) (-1,+0) (-1,+1) (-1,+2)    (-1,-2) (-1,-1) (-1,+0) (-1,+1) (-1,+2)
+    # n = 0   (+0,-2) (+0,-1) (+0,+0) (+0,+1) (+0,+2)    (+0,-2) (+0,-1) (+0,+0) (+0,+1) (+0,+2)
+    #         (+1,-2) (+1,-1) (+1,+0) (+1,+1) (+1,+2)    (+1,-2) (+1,-1) (+1,+0) (+1,+1) (+1,+2)
+    #         (+2,-2) (+2,-1) (+2,+0) (+2,+1) (+2,+2)    (+2,-2) (+2,-1) (+2,+0) (+2,+1) (+2,+2)
+    #
+    #         (-2,-2) (-2,-1) (-2,+0) (-2,+1) (-2,+2)    (-2,-2) (-2,-1) (-2,+0) (-2,+1) (-2,+2)
+    #         (-1,-2) (-1,-1) (-1,+0) (-1,+1) (-1,+2)    (-1,-2) (-1,-1) (-1,+0) (-1,+1) (-1,+2)
+    # n = 1   (+0,-2) (+0,-1) (+0,+0) (+0,+1) (+0,+2)    (+0,-2) (+0,-1) (+0,+0) (+0,+1) (+0,+2)
+    #         (+1,-2) (+1,-1) (+1,+0) (+1,+1) (+1,+2)    (+1,-2) (+1,-1) (+1,+0) (+1,+1) (+1,+2)
+    #         (+2,-2) (+2,-1) (+2,+0) (+2,+1) (+2,+2)    (+2,-2) (+2,-1) (+2,+0) (+2,+1) (+2,+2)
+    #
+    # The top loop is looping over the submatrix rows. (values of n)
+    # The second loop is looping over the submatrix columns. (values of n')
+    # The third loop is looping over rows within a submatrix. (values of l)
+    # The fourth loop is looping over columns within a submatrix. (values of l')
+    lenl = len(l)
+    for ring1 in range(num_rings):  # rows, n
+        for ii, i in enumerate(range(-max_l, 1)):  # rows, l
+            for ring2 in range(num_rings):  # cols, n'
+                for jj, j in enumerate(range(-max_l, 1)):  # cols, l'
+                    re = si.quad(lambda w: np.real(nht_integrand(w, i, j, ring1, ring2)), lower_limit, upper_limit)[0]
+                    im = si.quad(lambda w: np.imag(nht_integrand(w, i, j, ring1, ring2)), lower_limit, upper_limit)[0]
+
+                    matrix[ring1 * lenl + ii, ring2 * lenl + jj] = 1j**(i - j) * 1 / (2 * np.pi * f0 * num_bunches) / num_rings * (re + 1j * im)
+
+                    # The next three lines are exploiting symmetry. To turn
+                    # this off, comment out the next three lines and change
+                    # # both loops over range(-max_l, 1) to l.
+                    matrix[ring1 * lenl + lenl - ii - 1, ring2 * lenl + jj] = matrix[ring1 * lenl + ii, ring2 * lenl + jj]
+                    matrix[ring1 * lenl + ii, ring2 * lenl + lenl - jj - 1] = matrix[ring1 * lenl + ii, ring2 * lenl + jj]
+                    matrix[ring1 * lenl + lenl - ii - 1, ring2 * lenl + lenl - jj - 1] = matrix[ring1 * lenl + ii, ring2 * lenl + jj]
+
+    return matrix
