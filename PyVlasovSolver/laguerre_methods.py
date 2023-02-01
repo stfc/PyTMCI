@@ -102,6 +102,41 @@ def Ilnk(w: float, a: float, l: int, n: int, k: int, beta: float) -> float:
                   absw**2 / beta**2 / cn.c**2 / 4 / a))
 
 
+def Gksum(Gk_array, w, a, l, n, beta):
+    '''
+    Computes
+    Sum_{k=0}^{len(Gk_array)} G_{k} * I _{lnk}(w, a, l, n, k)
+    with the same method as generateGksumDict, but for only
+    a single value of l and n.
+
+    If w is known in advance then it is usually faster to use
+    generateGksumDict. In the broadband base matrix method, w
+    is decided by the integration routine and is not known in
+    advance, so the summation must be computed when the integral
+    is evaluated.
+    '''
+    # pre-calculate any variables which don't depend on l, n or k
+    # outside of the loops.
+    absw = np.abs(w)
+    signw = np.sign(w)
+    absl = np.abs(l)
+
+    const_1 = absw / beta / cn.c / 2 / a
+    lna_argument = absw**2 / beta**2 / cn.c**2 / 4 / a
+    coef = np.exp(-lna_argument)
+    sigma = 0
+
+    coef_l = np.sign(l)**absl * signw**absl * (const_1)**absl
+
+    total = np.zeros(len(w), dtype=np.float64)
+    for k, Gk in enumerate(Gk_array):
+        total += (Gk * (-1)**(n + k)
+                  * Lna(n, sigma - n + k, lna_argument)
+                  * Lna(k, absl - sigma + n - k, lna_argument))
+
+    return coef_l * coef * total
+
+
 def generateGksumDict(Gk_array, w, a, max_l, max_n, beta):
     '''
     Computes
@@ -665,3 +700,82 @@ def calculateGk(a, k, g0hat, method='midpoint', max_radius=-1, numerical_normali
         u = np.linspace(0, max_radius**2 * a, 5000)
         y = g0hat(np.sqrt(u / a)) * Lna(k, 0, u)
         return np.trapz(y, u)
+
+
+def generateBroadbandBaseMatrix(max_l: int, max_n: int, a: float, Gk: np.ndarray,
+                                upper_limit: float, zperp,
+                                f0: float, num_bunches: float, beta: float, w_xi: float) -> np.ndarray:
+    '''
+    '''
+
+    # Some simplified impedance definitions don't evaluate well at 0, so
+    # add a very small inequality between the magnitude of the upper and
+    # lower limits, making 0 not exactly in the middle.
+    lower_limit = -0.9999 * upper_limit
+
+    # Make a list of all the values of l that will be calculated, this gets repeated a few times
+    l = np.arange(-int(max_l), int(max_l) + 1)
+
+    # Generate coefficients which depend on n
+    gamma_coef = generateFactCoefficient(max_l, max_n)
+
+    def integrand(zperp, Gk, w, w_xi, a, ll, lp, n, npp, beta):
+        value = (Qln(np.atleast_1d(w) - w_xi, a, lp, npp, beta)
+                 * zperp(np.atleast_1d(w) / 2 / np.pi)
+                 * Gksum(Gk, np.atleast_1d(w) - w_xi, a, ll, n, beta))
+        return value
+
+    # Allocate memory for the matrix
+    matrix = np.zeros(shape=((2 * max_l + 1) * (max_n + 1),
+                             (2 * max_l + 1) * (max_n + 1)),
+                      dtype=np.complex128)
+
+    # populate the matrix
+    # If max_l=2, and max_n=1 the values of (l, l') are
+    #                  n' = 0                                     n' = 1
+    #         (-2,-2) (-2,-1) (-2,+0) (-2,+1) (-2,+2)    (-2,-2) (-2,-1) (-2,+0) (-2,+1) (-2,+2)
+    #         (-1,-2) (-1,-1) (-1,+0) (-1,+1) (-1,+2)    (-1,-2) (-1,-1) (-1,+0) (-1,+1) (-1,+2)
+    # n = 0   (+0,-2) (+0,-1) (+0,+0) (+0,+1) (+0,+2)    (+0,-2) (+0,-1) (+0,+0) (+0,+1) (+0,+2)
+    #         (+1,-2) (+1,-1) (+1,+0) (+1,+1) (+1,+2)    (+1,-2) (+1,-1) (+1,+0) (+1,+1) (+1,+2)
+    #         (+2,-2) (+2,-1) (+2,+0) (+2,+1) (+2,+2)    (+2,-2) (+2,-1) (+2,+0) (+2,+1) (+2,+2)
+    #
+    #         (-2,-2) (-2,-1) (-2,+0) (-2,+1) (-2,+2)    (-2,-2) (-2,-1) (-2,+0) (-2,+1) (-2,+2)
+    #         (-1,-2) (-1,-1) (-1,+0) (-1,+1) (-1,+2)    (-1,-2) (-1,-1) (-1,+0) (-1,+1) (-1,+2)
+    # n = 1   (+0,-2) (+0,-1) (+0,+0) (+0,+1) (+0,+2)    (+0,-2) (+0,-1) (+0,+0) (+0,+1) (+0,+2)
+    #         (+1,-2) (+1,-1) (+1,+0) (+1,+1) (+1,+2)    (+1,-2) (+1,-1) (+1,+0) (+1,+1) (+1,+2)
+    #         (+2,-2) (+2,-1) (+2,+0) (+2,+1) (+2,+2)    (+2,-2) (+2,-1) (+2,+0) (+2,+1) (+2,+2)
+    #
+    lenl = len(l)
+    for nn in range(max_n + 1):  # rows, n
+        for ii, i in enumerate(range(-max_l, 1)):  # rows, l
+            for nnp in range(max_n + 1):  # cols, n'
+                for jj, j in enumerate(range(-max_l, 1)):  # cols, l'
+                    re = si.quad(lambda w: np.real(integrand(zperp, Gk, w, w_xi, a, i, j, nn, nnp, beta)), lower_limit, upper_limit)[0]
+                    im = si.quad(lambda w: np.imag(integrand(zperp, Gk, w, w_xi, a, i, j, nn, nnp, beta)), lower_limit, upper_limit)[0]
+
+                    matrix[nn * lenl + ii, nnp * lenl + jj] = (1j)**(i - j) * gamma_coef[np.abs(i)][nn] * 1 / (2 * np.pi * f0 * num_bunches) * (re + 1j * im)
+
+                    # The next three lines are utilising symmetry between (l, -l) and (l', -l')
+                    #
+                    # The factor i^{l - l'} has to be updated for the sign of l.
+                    # i^{l - l'} = (-1)^{l} * i^{-l - l'}
+                    # i^{l - -l'} = (-1)^{l'} * i^{l - +l'}
+                    # i^{l - l'} = (-1)^{l + l'} * i^{-l - -l'}
+                    #
+                    # The quantities Q_{l' n'} has to be updated for the new sign of l'
+                    # If we stick with only the negative signs of l', then Q_{l',n} = (-1)^{l'} Q_{-l', n}
+                    # If -l' -> l' then there is a new factor if (-1)^{l'} * (-1)^{-l} = 1
+                    #
+                    # The quantities I_{lnk} have to be updated for the new value of l
+                    # If we stick with only the negative signs of l, then I_{l,n,k} = (-1)^{l} I_{-l, n, k}
+                    # If -l -> l, then this has a new factor of (-1)^l * (-1)^l = (-1)^(2l) = 1
+                    #
+                    # In all cases the sign is ultimately unchanged, so these matrix elements are the same.
+                    #
+                    # To stop utilising this symmetry, comment out the next three lines and replace
+                    # the (ii, i) and (jj, j) loops to loop over enumerate(l) rather than enumerate(range(-max_l, 1))
+                    matrix[nn * lenl + (2 * max_l + 1) - ii - 1, nnp * lenl + jj] = matrix[nn * lenl + ii, nnp * lenl + jj]
+                    matrix[nn * lenl + (2 * max_l + 1) - ii - 1, nnp * lenl + (2 * max_l + 1) - jj - 1] = matrix[nn * lenl + ii, nnp * lenl + jj]
+                    matrix[nn * lenl + ii, nnp * lenl + (2 * max_l + 1) - jj - 1] = matrix[nn * lenl + ii, nnp * lenl + jj]
+
+    return matrix

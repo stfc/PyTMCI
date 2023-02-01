@@ -109,15 +109,23 @@ class vlasovSolver():
         are evaluated at the same frequencies, significantly reducing
         computation time by exploiting symmetry.
 
-        'broadband' - Assumes that the functions in the summation don't
-        change much between samples, so that the summation can be replaced
-        by an integral; the summation is considered to be a Riemann sum. In
-        the single-bunch case, this is assuming the impedance and other
-        functions do not change much on the scale of the revolution frequency.
-        This is introduced in Chao's Equation 6.213 and used in Equation 6.222.
-        Chao describes it as a "broadband impedance" model or a
-        "single-turn wake" model.
-
+        'broadband' - Assumes that the function in the summation
+        Σ_{p} f(pω_{0} + Ω)
+        doesn't change much between samples, so that
+        Σ_{p} f(ω') -> 1/ω_{0} ∫ f(ω') dω'
+        where ω' = pω_{0} + Ω, as if the summation were a Riemann sum.
+        In the single-bunch case, this is assuming the impedance and other
+        functions do not change much on the scale of the revolution
+        frequency. The upper limit of this integration is taken to be
+        the highest frequency defined by the value of max_harmonics,
+        and there is a slight assymmetry added between positive and negative
+        limits to avoid evaluation of the impedance at 0; where some
+        approximate impedance definitions diverge. This approach is introduced
+        in Chao's Equation 6.213 and used in Equation 6.222. Chao describes it as a
+        "broadband impedance" model or a "single-turn wake" model.
+        This method is likely to be relatively slow, as the sample frequencies
+        are decided by the integration routine meaning that less terms can be
+        computed in advance and there's less room for compilation.
         '''
         if method == "perturbed-simple":
             return self._generateBaseMatrix_perturbedSimple(zperp,
@@ -359,6 +367,17 @@ class arbitraryLongitudinal(vlasovSolver):
             self.accelerator.f0, self.accelerator.num_bunches,
             self.accelerator.beta, self.accelerator.w_xi)
 
+        return self.base_matrix
+
+    def _generateBaseMatrix_broadband(self, zperp, max_harmonics, multi_bunch_mode):
+        sample_frequencies = self._impedanceSampleFrequencies(max_harmonics, multi_bunch_mode)
+        upper_limit = np.max(sample_frequencies)
+
+        self.base_matrix = lm.generateBroadbandBaseMatrix(self.max_l, self.max_n, self.a, self.Gk,
+                                                          upper_limit, zperp,
+                                                          self.accelerator.f0, self.accelerator.num_bunches,
+                                                          self.accelerator.beta,
+                                                          self.accelerator.w_xi)
         return self.base_matrix
 
     def g1(self, eigenvectors, max_r, grid_size):
