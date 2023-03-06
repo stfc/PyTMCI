@@ -189,7 +189,6 @@ def generateBroadbandBaseMatrix(max_l: int, zhat,
                                 upper_limit: np.ndarray,
                                 zperp,
                                 f0: float, num_bunches: int,
-                                multi_bunch_mode: int,
                                 beta: float, w_xi: float) -> np.ndarray:
     '''
     Prior to Chao's Equation 6.184, the value of Ω in the definition of

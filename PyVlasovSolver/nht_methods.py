@@ -185,7 +185,6 @@ def generateBroadbandBaseMatrix(max_l: int, ring_radii,
                                 upper_limit: np.ndarray,
                                 zperp,
                                 f0: float, num_bunches: int,
-                                multi_bunch_mode: int,
                                 beta: float, w_xi: float) -> np.ndarray:
     num_rings = len(ring_radii)
 

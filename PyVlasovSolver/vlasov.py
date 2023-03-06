@@ -126,6 +126,7 @@ class vlasovSolver():
         This method is likely to be relatively slow, as the sample frequencies
         are decided by the integration routine meaning that less terms can be
         computed in advance and there's less room for compilation.
+        multi_bunch_mode is not a required parameter for this method.
         '''
         if method == "perturbed-simple":
             return self._generateBaseMatrix_perturbedSimple(zperp,
@@ -136,7 +137,7 @@ class vlasovSolver():
                                                           max_harmonics,
                                                           multi_bunch_mode)
         elif method == "broadband":
-            return self._generateBaseMatrix_broadband(zperp, max_harmonics, multi_bunch_mode)
+            return self._generateBaseMatrix_broadband(zperp, max_harmonics)
         else:
             raise ValueError("Invalid method.")
 
@@ -146,7 +147,7 @@ class vlasovSolver():
     def _generateBaseMatrix_perturbedFull(self, zperp, max_harmonics, multi_bunch_mode):
         raise Exception("Not implemented yet.")
 
-    def _generateBaseMatrix_broadband(self, zperp, max_harmonics, multi_bunch_mode):
+    def _generateBaseMatrix_broadband(self, zperp, max_harmonics):
         raise Exception("Not implemented yet.")
 
     def generateLMatrix(self):
@@ -237,14 +238,14 @@ class airbag(vlasovSolver):
 
         return self.base_matrix
 
-    def _generateBaseMatrix_broadband(self, zperp, max_harmonics, multi_bunch_mode):
-        sample_frequencies = self._impedanceSampleFrequencies(max_harmonics, multi_bunch_mode)
+    def _generateBaseMatrix_broadband(self, zperp, max_harmonics):
+        sample_frequencies = self._impedanceSampleFrequencies(max_harmonics, 0)
         upper_limit = np.max(sample_frequencies)
 
         self.base_matrix = am.generateBroadbandBaseMatrix(self.max_l, self.zhat,
                                                           upper_limit, zperp,
                                                           self.accelerator.f0, self.accelerator.num_bunches,
-                                                          multi_bunch_mode, self.accelerator.beta,
+                                                          self.accelerator.beta,
                                                           self.accelerator.w_xi)
         return self.base_matrix
 
@@ -291,14 +292,14 @@ class NHT(vlasovSolver):
 
         return self.base_matrix
 
-    def _generateBaseMatrix_broadband(self, zperp, max_harmonics, multi_bunch_mode):
-        sample_frequencies = self._impedanceSampleFrequencies(max_harmonics, multi_bunch_mode)
+    def _generateBaseMatrix_broadband(self, zperp, max_harmonics):
+        sample_frequencies = self._impedanceSampleFrequencies(max_harmonics, 0)
         upper_limit = np.max(sample_frequencies)
 
         self.base_matrix = nht.generateBroadbandBaseMatrix(self.max_l, self.ring_radii,
                                                            upper_limit, zperp,
                                                            self.accelerator.f0, self.accelerator.num_bunches,
-                                                           multi_bunch_mode, self.accelerator.beta,
+                                                           self.accelerator.beta,
                                                            self.accelerator.w_xi)
         return self.base_matrix
 
@@ -369,8 +370,8 @@ class arbitraryLongitudinal(vlasovSolver):
 
         return self.base_matrix
 
-    def _generateBaseMatrix_broadband(self, zperp, max_harmonics, multi_bunch_mode):
-        sample_frequencies = self._impedanceSampleFrequencies(max_harmonics, multi_bunch_mode)
+    def _generateBaseMatrix_broadband(self, zperp, max_harmonics):
+        sample_frequencies = self._impedanceSampleFrequencies(max_harmonics, 0)
         upper_limit = np.max(sample_frequencies)
 
         self.base_matrix = lm.generateBroadbandBaseMatrix(self.max_l, self.max_n, self.a, self.Gk,
