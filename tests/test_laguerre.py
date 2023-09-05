@@ -1,9 +1,9 @@
 import unittest
 import numpy as np
 import scipy.constants as cn
-import PyVlasovSolver as vs
-from PyVlasovSolver import airbag_methods as am
-from PyVlasovSolver import laguerre_methods as lm
+import PyTMCI as vs
+from PyTMCI import airbag_methods as am
+from PyTMCI import laguerre_methods as lm
 
 
 # Max and min frequencies to check.

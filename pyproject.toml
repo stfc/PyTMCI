@@ -1,0 +1,37 @@
+[project]
+name = "PyTMCI"
+version = "0.0.1"
+description = "Vlasov solvers for coherent transverse beam instabilities."
+license = {text = "BSD-3-Clause"}
+requires-python = ">=3.8"
+dependencies = [
+    "numpy==1.24.3",
+    "scipy==1.10.1"
+]
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[metadata]
+author = "David Posthuma de Boer"
+author_email = "david.posthuma-de-boer@stfc.ac.uk"
+url = "undefined"
+
+[project.optional-dependencies]
+tests = [
+    "mpmath==1.2.1",
+]
+
+jit = [
+    "numba==0.57.1",
+    "numba-scipy @ git+https://github.com/numba/numba-scipy.git",
+]
+
+playground = [
+    "ipykernel",
+    "matplotlib",
+    "tqdm",
+    "joblib",
+    "loky"
+]
