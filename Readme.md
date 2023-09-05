@@ -33,7 +33,7 @@ correct dependency versions. Afterwards, the package can be installed using
 pip with the command
 
 ```
-python -m pip install pyTMCI
+python -m pip install pyTMCIVlasov
 ```
 
 By default, this will install a version of the code that does not use Numba
@@ -47,9 +47,13 @@ python -m pip install git+https://github.com/numba/numba-scipy.git
 
 PyTMCI will then automatically compile the code where it can.
 
-numba-scipy is currently installed with a github url due to a dependency issue with
-the version on pypi. An ordinary pip install command will be used when the version
-on pypi is updated.
+__Notes__
+1. The name PyTMCI is not available on pypi, as it is too similar to another package,
+   so PyTMCIVlasov was used instead. 
+
+1. numba-scipy is currently installed with a github url due to a dependency issue with
+   the version on pypi. An ordinary pip install command will be used when the version
+   on pypi is updated.
 
 
 ### Developer and Manual Set-Up

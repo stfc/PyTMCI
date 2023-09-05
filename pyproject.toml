@@ -1,5 +1,5 @@
 [project]
-name = "PyTMCI"
+name = "PyTMCIVlasov"
 version = "0.0.1"
 description = "Vlasov solvers for coherent transverse beam instabilities."
 license = {text = "BSD-3-Clause"}
