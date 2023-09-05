@@ -196,7 +196,7 @@ def generateBroadbandBaseMatrix(max_l: int, zhat,
     The perturbation technique that resulted in Equation 6.184 is used
     extensively to obtain subsequent results, as it defines the frequencies
     at which the impedance and other functions are sampled. This
-    technique is the basis of PyVlasovSolver's base_matrix_perturbed methods,
+    technique is the basis of PyTMCI's base_matrix_perturbed methods,
     and makes the assumption that frequency shifts are small compared to
     the zero-intensity frequencies.
 
