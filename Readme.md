@@ -37,15 +37,19 @@ python -m pip install pyTMCI
 ```
 
 By default, this will install a version of the code that does not use Numba
-for JIT compilation. To speed up the code, also install Numba and Numba-scipy
+for JIT compilation. To speed up the code, manually install Numba and Numba-scipy
 manually with the commands
 
 ```
-python -m pip install numba==0.57.1
+python -m pip install numba
 python -m pip install git+https://github.com/numba/numba-scipy.git
 ```
 
-PyTMCI will then automatically compile the code where it can. 
+PyTMCI will then automatically compile the code where it can.
+
+numba-scipy is currently installed with a github url due to a dependency issue with
+the version on pypi. An ordinary pip install command will be used when the version
+on pypi is updated.
 
 
 ### Developer and Manual Set-Up
@@ -71,7 +75,10 @@ terminal. Afterwards, open a terminal and follow these instructions
 
 1. (Optional) If you would like use JIT compilation to speed up PyTMCI
    (with Numba), also run
-   `python -m pip install -e '.[jit]'`
+   ```
+   python -m pip install numba
+   python -m pip install git+https://github.com/numba/numba-scipy.git
+   ```
 
 1. (Optional) If you would like to run the unit tests, also run
    `python -m pip install -e '.[tests]'`
