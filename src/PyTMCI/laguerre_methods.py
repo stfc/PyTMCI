@@ -1,7 +1,6 @@
 import numpy as np                  # Linear algebra and mathematical functions
 import scipy.constants as cn        # Physical constants
 import scipy.integrate as si        # Numerical integration methods (Romberg)
-# from multiprocessing import Pool  # Performing operations in parallel
 
 
 # ====== General Maths Functions
