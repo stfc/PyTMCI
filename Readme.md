@@ -38,7 +38,7 @@ python -m pip install pyTMCIVlasov
 
 By default, this will install a version of the code that does not use Numba
 for JIT compilation. To speed up the code, manually install Numba and Numba-scipy
-manually with the commands
+with the commands
 
 ```
 python -m pip install numba
@@ -58,8 +58,8 @@ __Notes__
 
 ### Developer and Manual Set-Up
 
-If the automatic set-up does not work, or to develop the code the package
-can be installed manually. The instructions are given for Linux, but the
+If the automatic set-up does not work, or to develop the code the package can
+be installed manually. These instructions are given for Linux, but the
 process should be similar for other operating systems. Before proceeding,
 ensure that Python and git are installed on your system and can be run on a
 terminal. Afterwards, open a terminal and follow these instructions
