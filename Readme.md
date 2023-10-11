@@ -3,8 +3,8 @@
 
 A python package to predict mode frequencies and growth rates for transverse,
 coherent bunched beam instabilities including mode coupling. Python files
-contain the code, and the jupyter notebooks (separate to this repository)
-contain usage examples.
+contain the code, and the [jupyter notebooks](https://github.com/DavidPost-1/PyTMCI_benchmark)
+(separate to this repository) contain usage examples.
 
 
 ## Code Description
